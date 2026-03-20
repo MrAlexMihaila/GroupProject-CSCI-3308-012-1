@@ -1,0 +1,12 @@
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+  background-color: #cfcfcf;
+  color: #000;
+  border: none;
+}
+
+.logo-subtext {
+    font-size: 0.75rem;
+    margin-top: -4px;
+    letter-spacing: 0.5px;
+}

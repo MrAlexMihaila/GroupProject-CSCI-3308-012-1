@@ -1,30 +1,43 @@
 <header>
-    <!-- this nav bar will be vertical and on the left side of the screen -->
- <nav class="navbar navbar-expand-sm border-bottom">
-   <div class="container">
-     <button
-       class="navbar-toggler ms-auto"
-       type="button"
-       data-bs-toggle="collapse"
-       data-bs-target="#navbar-collapse"
-       aria-controls="navbar"
-       aria-expanded="false"
-       aria-label="Toggle navigation">
-       <span class="navbar-toggler-icon"></span>
-     </button>
-     <div class="collapse navbar-collapse" id="navbar-collapse">
-       <ul class="navbar-nav me-auto">
-         <li class="nav-item">
-           <!--<a class="nav-link" href="/discover">Discover</a>-->
-         </li>
-       </ul>
-       <div class="nav-item me-1">
-         <a class="nav-link" href="/login">Log In</a>
-       </div>
-       <div class="nav-item me-1">
-         <a class="nav-link" href="/logout">Log Out</a>
-       </div>
-     </div>
-   </div>
- </nav>
+  <div class="d-flex flex-column flex-shrink-0 p-3 bg-light" style="width: 280px; height: 100vh; position: fixed; top: 0; left: 0;">
+    <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
+      <div class="d-flex flex-column">
+        <span class="fs-4">ATrack</span>
+        <small class="logo-subtext text-muted" style="margin-top: -4px;">for music</small>
+      </div>
+    </a>
+    <hr>
+      <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+          <a href="#" class="nav-link link-dark active" aria-current="page">
+            Albums
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link link-dark">
+            Songs
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link link-dark">
+            Genres
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link link-dark">
+            Friends
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link link-dark">
+            Fifteen
+          </a>
+        </li>
+      </ul>
+      <div class="d-grid gap-2">
+        <a class="btn btn-outline-primary rounded-0" href="/login" role="button">Log In</a>
+        <a class="btn btn-primary rounded-0" href="/register" role="button">Sign Up Free</a>
+      </div>
+    <hr>
+  </div>
 </header>
