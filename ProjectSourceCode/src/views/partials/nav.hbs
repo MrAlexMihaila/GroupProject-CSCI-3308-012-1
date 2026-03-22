@@ -1,0 +1,57 @@
+<header>
+  <div class="d-flex flex-column flex-shrink-0 p-3 bg-light" style="width: 280px; height: 100vh; position: fixed; top: 0; left: 0;">
+    <a href="/" class="d-flex justify-content-center w-100 text-decoration-none link-dark">
+      <i class="bi bi-card-image"></i>
+      <div class="d-flex flex-column align-items-center text-center">
+        <span class="fs-4">ATrack</span>
+        <small class="logo-subtext text-muted" style="margin-top: -4px;">for music</small>
+      </div>
+    </a>
+    <hr>
+      <ul class="nav nav-pills flex-column mb-auto">
+        <form class="navbar-form navbar-left" action="/search" method="GET">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="bi bi-search"></i>
+            </span>
+            <input type="text" class="form-control" placeholder="Search for...">
+          </div>
+        </form>
+        <li class="nav-item">
+          <a href="/albums" class="nav-link link-dark {{#if isAlbums}}active{{/if}}" aria-current="page">
+            <i class="bi bi-vinyl-fill"></i>
+            Albums
+          </a>
+        </li>
+        <li>
+          <a href="/songs" class="nav-link link-dark {{#if isSongs}}active{{/if}}">
+            <i class="bi bi-music-note-beamed"></i>
+            Songs
+          </a>
+        </li>
+        <li>
+          <a href="/genres" class="nav-link link-dark {{#if isGenres}}active{{/if}}">
+            <i class="bi bi-music-note-list"></i>
+            Genres
+          </a>
+        </li>
+        <li>
+          <a href="/friends" class="nav-link link-dark {{#if isFriends}}active{{/if}}">
+            <i class="bi bi-people-fill"></i>
+            Friends
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-link link-dark">
+            <i class="bi bi-0-circle"></i> <!--this icon is placeholder since I am not sure what this is for?-->
+            Fifteen
+          </a>
+        </li>
+      </ul>
+      <div class="d-grid gap-2">
+        <a class="btn btn-outline-primary rounded-0" href="/login" role="button">Log In</a>
+        <a class="btn btn-primary rounded-0" href="/register" role="button">Sign Up Free</a>
+      </div>
+    <hr>
+  </div>
+</header>
