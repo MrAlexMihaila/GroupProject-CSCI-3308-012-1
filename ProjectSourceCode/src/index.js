@@ -100,7 +100,7 @@ app.post('/login', async (req, res) => {
 
     req.session.user = user;
     req.session.save();
-    res.redirect('/discover');
+    res.redirect('/home'); //default, probably change
   } catch(err)
   {
     return res.render('pages/login', {message: 'Something went wrong. Please try again.'});
@@ -129,6 +129,25 @@ app.post('/register', async (req, res) => {
   }
 });
 
+//this is a test method to ensure that the search bar is working, probably remove this when searching is
+//actually made
+app.get('/search', async (req, res) => {
+  console.log("search happened");
+  res.redirect('/home'); //default for now
+});
+
+app.get('/albums', async (req, res) => {
+  res.render('pages/albums', {isAlbums: true});
+});
+
+app.get('/songs', async (req, res) => {
+  res.render('pages/songs', {isSongs: true});
+});
+
+app.get('/genres', async (req, res) => {
+  res.render('pages/genres', {isGenres: true});
+});
+
 //Authentication Middleware, from lab 7 (again)
 const auth = (req, res, next) => {
   if (!req.session.user) {
@@ -137,6 +156,11 @@ const auth = (req, res, next) => {
   }
   next();
 };
+
+//can only access friends page if authenticated
+app.get('/friends', auth, async (req, res) => {
+  res.render('pages/friends', {isFriends: true});
+})
 
 //starting server, do not delete the next two lines
 app.listen(3000);
