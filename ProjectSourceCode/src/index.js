@@ -9,6 +9,32 @@ const session = require('express-session'); // To set the session object. To sto
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 
+//specific api functions
+
+//get the spotify api token for use in all future spotify api calls
+function getSpotifyToken()
+{
+  return axios({
+      url: "https://accounts.spotify.com/api/token",
+      method: "POST",
+      headers: 
+      {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      data: new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: process.env.SPOTIFY_CLIENT_ID,
+        client_secret: process.env.SPOTIFY_CLIENT_SECRET,
+      }).toString(),
+    })
+    .then(response => {
+      return response.data.access_token;
+    })
+    .catch(err => {
+      console.error("Error getting Spotify Token, maybe an API issue?", err.response?.data || err.message);
+    });
+};
+
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
@@ -141,7 +167,36 @@ app.get('/albums', async (req, res) => {
 });
 
 app.get('/songs', async (req, res) => {
-  res.render('pages/songs', {isSongs: true});
+  //this is a test call for now
+  getSpotifyToken()
+  .then(token => {
+    return axios({
+      url: "https://api.spotify.com/v1/search",
+      method: "GET",
+      headers: 
+      {
+        Authorization: `Bearer ${token}`,
+      },
+      params: 
+      {
+          q: "weekend", //dummy thing for now
+          type: "track",
+          limit: 3,
+      },
+    });
+  })
+  //once above api call is done, return the response
+  .then(response => {
+    const tracks = response.data.tracks.items;
+
+    console.log(tracks); //view all tracks from our "search"
+    
+    res.render('pages/songs', {isSongs: true});
+  })
+  .catch(err => {
+    console.error(err.response?.data || err.message);
+    res.render('pages/songs', {isSongs: true});
+  });
 });
 
 app.get('/genres', async (req, res) => {
