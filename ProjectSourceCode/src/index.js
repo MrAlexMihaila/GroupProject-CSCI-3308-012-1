@@ -9,11 +9,24 @@ const session = require('express-session'); // To set the session object. To sto
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 
-//specific api functions
+//specific spotify functions
+let spotifyToken = null;
+let tokenExpiresAt = 0;
 
-//get the spotify api token for use in all future spotify api calls
+//get the spotify api token for use in all future spotify api calls, and make sure we do not spam call the server every
+//single time we refresh the page
 function getSpotifyToken()
 {
+  const currentTime = Date.now();
+
+  //if a token already exists and token has not expired, simply return the token we already made
+  if(spotifyToken && currentTime < tokenExpiresAt) 
+  {
+    //console.log("token not expired yet");
+    return Promise.resolve(spotifyToken);
+  }
+
+  //fetch a new token since we either have not gotten a token yet, or current token has expired
   return axios({
       url: "https://accounts.spotify.com/api/token",
       method: "POST",
@@ -28,7 +41,12 @@ function getSpotifyToken()
       }).toString(),
     })
     .then(response => {
-      return response.data.access_token;
+      spotifyToken = response.data.access_token;
+
+      //gets the time when the token will expire
+      tokenExpiresAt = currentTime + (response.data.expires_in * 1000);
+
+      return spotifyToken;
     })
     .catch(err => {
       console.error("Error getting Spotify Token, maybe an API issue?", err.response?.data || err.message);
@@ -179,7 +197,7 @@ app.get('/songs', async (req, res) => {
       },
       params: 
       {
-          q: "weekend", //dummy thing for now
+          q: "weekend", //dummy search value for now
           type: "track",
           limit: 3,
       },
