@@ -224,7 +224,7 @@ app.get('/songs', async (req, res) => {
   .then(response => {
     const tracks = response.data.tracks.items;
 
-    console.log(tracks); //view all tracks from our "search"
+    //console.log(tracks); //view all tracks from our "search"
     
     // pass the track data to the songs page
     // in the future we should have multiple rows on the song page, each with its own api call, and we can pass in different data for each row (ex: top tracks, new releases, etc.)
@@ -248,6 +248,38 @@ const auth = (req, res, next) => {
   }
   next();
 };
+
+app.get('/songs/:id', async (req, res) => {
+  const songID = req.params.id;
+  //console.log(songID);
+  getSpotifyToken()
+  .then(token => {
+    return axios({
+      url: `https://api.spotify.com/v1/tracks/${songID}`,
+      method: "GET",
+      headers: 
+      {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  })
+  .then(response => {
+    const songName = response.data.name;
+    const artistsArray = response.data.artists;
+    const songAlbumImage = response.data.album.images;
+
+    const totalSeconds = Math.floor(response.data.duration_ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, time: formattedTime, isSongs: true});
+  })
+  .catch(err => {
+    console.error(err.response?.data || err.message);
+    res.render('pages/songs', { song_list: [], isSongs: true});
+  });
+});
 
 //can only access friends page if authenticated
 app.get('/friends', auth, async (req, res) => {
