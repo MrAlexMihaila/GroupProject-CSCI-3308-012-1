@@ -9,6 +9,50 @@ const session = require('express-session'); // To set the session object. To sto
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
 
+//specific spotify functions
+let spotifyToken = null;
+let tokenExpiresAt = 0;
+
+//get the spotify api token for use in all future spotify api calls, and make sure we do not spam call the server every
+//single time we refresh the page
+function getSpotifyToken()
+{
+  const currentTime = Date.now();
+
+  //if a token already exists and token has not expired, simply return the token we already made
+  if(spotifyToken && currentTime < tokenExpiresAt) 
+  {
+    //console.log("token not expired yet");
+    return Promise.resolve(spotifyToken);
+  }
+
+  //fetch a new token since we either have not gotten a token yet, or current token has expired
+  return axios({
+      url: "https://accounts.spotify.com/api/token",
+      method: "POST",
+      headers: 
+      {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      data: new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: process.env.SPOTIFY_CLIENT_ID,
+        client_secret: process.env.SPOTIFY_CLIENT_SECRET,
+      }).toString(),
+    })
+    .then(response => {
+      spotifyToken = response.data.access_token;
+
+      //gets the time when the token will expire
+      tokenExpiresAt = currentTime + (response.data.expires_in * 1000);
+
+      return spotifyToken;
+    })
+    .catch(err => {
+      console.error("Error getting Spotify Token, maybe an API issue?", err.response?.data || err.message);
+    });
+};
+
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
@@ -141,7 +185,36 @@ app.get('/albums', async (req, res) => {
 });
 
 app.get('/songs', async (req, res) => {
-  res.render('pages/songs', {isSongs: true});
+  //this is a test call for now
+  getSpotifyToken()
+  .then(token => {
+    return axios({
+      url: "https://api.spotify.com/v1/search",
+      method: "GET",
+      headers: 
+      {
+        Authorization: `Bearer ${token}`,
+      },
+      params: 
+      {
+          q: "weekend", //dummy search value for now
+          type: "track",
+          limit: 3,
+      },
+    });
+  })
+  //once above api call is done, return the response
+  .then(response => {
+    const tracks = response.data.tracks.items;
+
+    console.log(tracks); //view all tracks from our "search"
+    
+    res.render('pages/songs', {isSongs: true});
+  })
+  .catch(err => {
+    console.error(err.response?.data || err.message);
+    res.render('pages/songs', {isSongs: true});
+  });
 });
 
 app.get('/genres', async (req, res) => {
