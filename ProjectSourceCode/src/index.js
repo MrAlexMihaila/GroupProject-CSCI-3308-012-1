@@ -59,6 +59,23 @@ const hbs = handlebars.create({
   partialsDir: __dirname + '/views/partials',
 });
 
+// Helper functions for handlebars
+Handlebars.registerHelper('mod', function(a, b) {
+  return a % b;
+});
+
+Handlebars.registerHelper('eq', function(a, b) {
+  return a === b;
+});
+
+Handlebars.registerHelper('div', function(a, b) {
+  return Math.floor(a / b);
+});
+
+Handlebars.registerHelper('add', function(a, b) {
+  return a + b;
+});
+
 // database configuration
 const dbConfig = {
   host: 'db', // the database server
@@ -195,11 +212,11 @@ app.get('/songs', async (req, res) => {
       {
         Authorization: `Bearer ${token}`,
       },
-      params: 
+       params: 
       {
-          q: "weekend", //dummy search value for now
+          q: "Pink Floyd", //dummy search value for now
           type: "track",
-          limit: 3,
+          limit: 15,
       },
     });
   })
@@ -209,11 +226,13 @@ app.get('/songs', async (req, res) => {
 
     console.log(tracks); //view all tracks from our "search"
     
-    res.render('pages/songs', {isSongs: true});
+    // pass the track data to the songs page
+    // in the future we should have multiple rows on the song page, each with its own api call, and we can pass in different data for each row (ex: top tracks, new releases, etc.)
+    res.render('pages/songs', { song_list: tracks, isSongs: true });
   })
   .catch(err => {
     console.error(err.response?.data || err.message);
-    res.render('pages/songs', {isSongs: true});
+    res.render('pages/songs', { song_list: [], isSongs: true});
   });
 });
 
