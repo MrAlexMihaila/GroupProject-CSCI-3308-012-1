@@ -75,6 +75,10 @@ Handlebars.registerHelper('div', function(a, b) {
 Handlebars.registerHelper('add', function(a, b) {
   return a + b;
 });
+//makes follower count formatted on artists page
+Handlebars.registerHelper('formatNumber', (num) => {
+  return num ? num.toLocaleString() : '';
+});
 
 // database configuration
 const dbConfig = {
@@ -268,6 +272,7 @@ app.get('/search', async (req, res) => {
     });
   }
 });
+
 
 app.get('/albums', async (req, res) => {
   res.render('pages/albums', {isAlbums: true});
