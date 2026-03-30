@@ -272,8 +272,23 @@ app.get('/songs/:id', async (req, res) => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+    let loggedIn = false;
+
+    //check if user is logged in
+    if(req.session.user)
+    {
+      loggedIn = true;
+      console.log("we need to add a database check to see if user has already made a review for this");
+    }
+
+    //code to calculate rating number will go here once we get database set up
+    //will just pass a dummy value for now
+    let songRating = 3.0; //out of 5 "stars"
     
-    res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, time: formattedTime, isSongs: true});
+    res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
+      time: formattedTime, login: loggedIn, songRating: songRating, songID: songID, isSongs: true
+    });
   })
   .catch(err => {
     console.error(err.response?.data || err.message);
