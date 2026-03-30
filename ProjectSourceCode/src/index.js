@@ -191,6 +191,7 @@ app.post('/register', async (req, res) => {
 });
 
 //in progress, only searches songs right now, need to make it work for artists and albums as well
+//doesn't work with the dropdown
 app.get('/search', async (req, res) => {
   const query = req.query.song;
 

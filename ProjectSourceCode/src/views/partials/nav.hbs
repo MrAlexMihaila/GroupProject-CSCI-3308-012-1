@@ -8,22 +8,31 @@
       </div>
     </a>
     <hr>
-      <!-- SEARCH BAR -->
+
 <form class="navbar-form navbar-left mb-3" action="/search" method="GET">
   <div class="input-group">
-    <span class="input-group-text bg-white border-end-0">
+
+    <!-- DROPDOWN -->
+    <select name="type" class="form-select px-2" style="max-width: 90px; background-color: #dee2e6" >
+      <option value="track">Songs</option>
+      <option value="artist">Artists</option>
+      <option value="album">Albums</option>
+    </select>
+
+    <!-- SEARCH ICON -->
+    <span class="input-group-text bg-white border-start-0 border-end-0">
       <i class="bi bi-search"></i>
     </span>
+
+    <!-- MAIN INPUT -->
     <input 
       type="text" 
       class="form-control" 
       name="song" 
-      placeholder="Search for..." 
+      placeholder="Search..." 
       required
     >
-    <button type="submit" class="btn btn-outline-secondary">
-      Search
-    </button>
+
   </div>
 </form>
 
