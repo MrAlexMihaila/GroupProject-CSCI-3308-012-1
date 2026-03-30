@@ -190,11 +190,52 @@ app.post('/register', async (req, res) => {
   }
 });
 
-//this is a test method to ensure that the search bar is working, probably remove this when searching is
-//actually made
+//in progress, only searches songs right now, need to make it work for artists and albums as well
 app.get('/search', async (req, res) => {
-  console.log("search happened");
-  res.redirect('/home'); //default for now
+  const query = req.query.song;
+
+  if (!query) { //sends home if search bar is empty
+    return res.redirect('/home');
+  }
+
+  try {
+    // get a valid api token
+    const token = await getSpotifyToken();
+    
+    const response = await axios({
+
+      url: "https://api.spotify.com/v1/search",
+      method: "GET",
+
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      
+      params: {
+        q: query, // what the user entered
+        type: "track", // only search for tracks, not artists or albums
+        limit: 15, // number of results
+      },
+    });
+
+    //get the track list from spotify
+    const tracks = response.data.tracks.items;
+    res.render('pages/songs', {
+      song_list: tracks,
+      isSongs: true
+    });
+    
+
+  }
+  catch (err) {
+    console.error(err.response?.data || err.message);
+
+    res.render('pages/songs', {
+      song_list: [],
+      isSongs: true,
+      error: "Search Failed"
+    });
+  }
 });
 
 app.get('/albums', async (req, res) => {
