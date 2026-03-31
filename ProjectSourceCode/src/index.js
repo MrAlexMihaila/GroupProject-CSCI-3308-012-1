@@ -388,10 +388,28 @@ app.get('/songs/:id', async (req, res) => {
   });
 });
 
+app.post('/addReview', auth, async (req, res) => {
+  //TO DO, get user id from request
+  const {rating, description, songID} = req.body;
+  if(rating < 0 || rating > 5) //somehow got invalid request
+  {
+    console.log("invalid rating?");
+    console.log(rating);
+    return res.status(400).json({
+      error: "Invalid Rating Sent"
+    });
+    //res.redirect(`/songs/${songId}`);
+  }
+  
+  console.log("got a request of...");
+  console.log(req.body);
+  return res.redirect(`/songs/${songID}`);
+});
+
 //can only access friends page if authenticated
 app.get('/friends', auth, async (req, res) => {
   res.render('pages/friends', {isFriends: true});
-})
+});
 
 //starting server, do not delete the next two lines
 app.listen(3000);
