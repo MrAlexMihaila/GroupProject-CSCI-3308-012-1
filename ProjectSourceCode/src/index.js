@@ -79,6 +79,9 @@ Handlebars.registerHelper('add', function(a, b) {
 Handlebars.registerHelper('formatNumber', (num) => {
   return num ? num.toLocaleString() : '';
 });
+Handlebars.registerHelper('year', (date) => {
+  return date ? date.substring(0, 4) : '';
+});
 
 // database configuration
 const dbConfig = {

@@ -54,3 +54,54 @@
   flex: 0 0 20%;
   max-width: 20%;
 }
+
+.col-2-4 {
+  flex: 0 0 20%;
+  max-width: 20%;
+}
+
+.album-img {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+/*cut off text when its too long*/
+.text-truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-truncate-1 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Wrapper forces square aspect ratio */
+.album-img-wrapper {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+/* Image fills the square */
+.album-img-full {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Card styling */
+.album-card {
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.album-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+}

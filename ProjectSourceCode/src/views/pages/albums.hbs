@@ -1,5 +1,20 @@
+<!--same as artists and songs pretty much-->
+
 <div class="container mt-4">
-    <p>
-        Dummy text for albums page. To be replaced.
-    </p>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Albums</h2>
+    <span class="text-muted small">{{album_list.length}} results</span>
+  </div>
+
+  <div class="row g-4">
+
+    {{#each album_list}}
+      <div class="col-2-4">
+        {{> album_card}}
+      </div>
+    {{/each}}
+
+  </div>
+
 </div>
