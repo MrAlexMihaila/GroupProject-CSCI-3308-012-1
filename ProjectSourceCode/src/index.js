@@ -323,8 +323,41 @@ const auth = (req, res, next) => {
 
 //can only access friends page if authenticated
 app.get('/friends', auth, async (req, res) => {
-  res.render('pages/friends', {isFriends: true});
-})
+  const search = req.query.search ? req.query.search.trim() : '';
+  const currentUserId = req.session.user.user_id;
+
+  try {
+    const users = await db.any(
+      `SELECT user_id, username, DATE(created_at) AS created_at
+       FROM users
+       WHERE user_id <> $1
+         AND username ILIKE $2
+       ORDER BY username ASC`,
+      [currentUserId, `%${search}%`]
+    );
+
+    const usersDisplay = users.map((u) => ({
+      ...u,
+      created_at: u.created_at,
+    }));
+
+    res.render('pages/friends', {
+      isFriends: true,
+      users: usersDisplay,
+      search,
+    });
+  } catch (err) {
+    console.error('Friends page load error:', err);
+    res.render('pages/friends', {
+      isFriends: true,
+      users: [],
+      search,
+      error: 'Unable to load friends. Please try again later.',
+    });
+  }
+});
+
+
 
 //starting server, do not delete the next two lines
 app.listen(3000);
