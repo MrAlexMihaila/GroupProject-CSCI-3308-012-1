@@ -321,6 +321,12 @@ const auth = (req, res, next) => {
   next();
 };
 
+//Makes user available to all templates
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  next();
+});
+
 //can only access friends page if authenticated
 app.get('/friends', auth, async (req, res) => {
   res.render('pages/friends', {isFriends: true});
