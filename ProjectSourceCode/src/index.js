@@ -75,6 +75,13 @@ Handlebars.registerHelper('div', function(a, b) {
 Handlebars.registerHelper('add', function(a, b) {
   return a + b;
 });
+//makes follower count formatted on artists page
+Handlebars.registerHelper('formatNumber', (num) => {
+  return num ? num.toLocaleString() : '';
+});
+Handlebars.registerHelper('year', (date) => {
+  return date ? date.substring(0, 4) : '';
+});
 
 // database configuration
 const dbConfig = {
@@ -197,8 +204,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
-//in progress, only searches songs right now, need to make it work for artists and albums as well
-//doesn't work with the dropdown
+
 app.get('/search', async (req, res) => {
   console.log("TYPE FROM FRONTEND:", req.query.type);
   const query = req.query.song;
@@ -238,7 +244,7 @@ app.get('/search', async (req, res) => {
 
     if (type === "track") {
       results = response.data.tracks.items;
-      res.render('pages/songs', {
+      res.render('pages/search_song', {
         song_list: results,
         isSongs: true
       });
@@ -268,13 +274,14 @@ app.get('/search', async (req, res) => {
   catch (err) {
     console.error(err.response?.data || err.message);
 
-    res.render('pages/songs', {
+    res.render('pages/songs_tab', {
       song_list: [],
       isSongs: true,
       error: "Search Failed"
     });
   }
 });
+
 
 app.get('/albums', async (req, res) => {
   res.render('pages/albums', {isAlbums: true});
@@ -307,11 +314,11 @@ app.get('/songs', async (req, res) => {
     
     // pass the track data to the songs page
     // in the future we should have multiple rows on the song page, each with its own api call, and we can pass in different data for each row (ex: top tracks, new releases, etc.)
-    res.render('pages/songs', { song_list: tracks, isSongs: true });
+    res.render('pages/songs_tab', { song_list: tracks, isSongs: true });
   })
   .catch(err => {
     console.error(err.response?.data || err.message);
-    res.render('pages/songs', { song_list: [], isSongs: true});
+    res.render('pages/songs_tab', { song_list: [], isSongs: true});
   });
 });
 
@@ -334,7 +341,7 @@ app.get('/logout', (req, res) => {
   });
 });
 
-app.get('/songs/:id', async (req, res) => {
+app.get('/songs_tab/:id', async (req, res) => {
   const songID = req.params.id;
   //console.log(songID);
   getSpotifyToken()
@@ -377,7 +384,7 @@ app.get('/songs/:id', async (req, res) => {
   })
   .catch(err => {
     console.error(err.response?.data || err.message);
-    res.render('pages/songs', { song_list: [], isSongs: true});
+    res.render('pages/songs_tab', { song_list: [], isSongs: true});
   });
 });
 
@@ -391,12 +398,12 @@ app.post('/addReview', auth, async (req, res) => {
     return res.status(400).json({
       error: "Invalid Rating Sent"
     });
-    //res.redirect(`/songs/${songId}`);
+    //res.redirect(`/songs_tab/${songId}`);
   }
   
   console.log("got a request of...");
   console.log(req.body);
-  return res.redirect(`/songs/${songID}`);
+  return res.redirect(`/songs_tab/${songID}`);
 });
 
 //can only access friends page if authenticated

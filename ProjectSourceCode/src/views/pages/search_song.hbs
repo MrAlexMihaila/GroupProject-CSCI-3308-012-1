@@ -1,0 +1,22 @@
+<!--need to add hover to songs-->
+
+<div class="container mt-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Songs</h2>
+    <span class="text-muted small">{{song_list.length}} results</span>
+  </div>
+
+  <!-- Grid -->
+  <div class="row g-4">
+
+    {{#each song_list}}
+      <div class="col-2-4">
+        {{> song_card}}
+      </div>
+    {{/each}}
+
+  </div>
+
+</div>
