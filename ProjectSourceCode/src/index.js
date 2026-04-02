@@ -152,7 +152,7 @@ app.post('/login', async (req, res) => {
     }
 
     // check if password from request matches with password in DB
-    const match = await bcrypt.compare(req.body.password, user.password);
+    const match = await bcrypt.compare(req.body.password, user.password_hash);
 
     if(!match) //password and/or user do not match
     {
@@ -180,7 +180,7 @@ app.post('/register', async (req, res) => {
 
   try {
     await db.none(
-      `INSERT INTO users(username, password) VALUES($1, $2);`, [req.body.username, hash]
+      `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [req.body.username, hash]
     );
 
     res.redirect('/login');
