@@ -110,3 +110,12 @@
   transform: translateY(-6px);
   box-shadow: 0 12px 25px rgba(0,0,0,0.15);
 }
+.song-card {
+  transition: all 0.2s ease;
+  border-radius: 12px;
+}
+
+.song-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+}
