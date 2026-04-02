@@ -412,5 +412,6 @@ app.get('/friends', auth, async (req, res) => {
 });
 
 //starting server, do not delete or modify the next two lines
-module.exports = app.listen(3000);
+const server = app.listen(3000);
+module.exports = {server, db};
 console.log('Server is listening on port 3000');

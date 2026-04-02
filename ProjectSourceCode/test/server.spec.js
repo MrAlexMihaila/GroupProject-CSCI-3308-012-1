@@ -1,6 +1,6 @@
 // ********************** Initialize server **********************************
 
-const server = require('../src/index'); //TODO: Make sure the path to your index.js is correctly added
+const {server, db} = require('../src/index'); //TODO: Make sure the path to your index.js is correctly added
 
 // ********************** Import Libraries ***********************************
 
@@ -39,7 +39,7 @@ describe('Server!', () => {
 // and expects the API to return a status of 200 along with the "Register Successful!" message.
 
 describe('Testing Register API', () => {
-  it('positive : /register', done => {
+  it('Positive : /register', done => {
     chai
       .request(server)
       .post('/register')
@@ -51,6 +51,7 @@ describe('Testing Register API', () => {
         done();
       });
   });
+  
 
   it('Negative : /register. Checking invalid name', done => {
     chai
@@ -62,5 +63,13 @@ describe('Testing Register API', () => {
         expect(res.body.message).to.equals('Failed to register!');
         done();
       });
+  });
+
+  before(async () => {
+    try {
+        await db.none(`DELETE FROM users WHERE username = 'JohnDoe3'`);
+    } catch (err) {
+        // ignore
+    }
   });
 });
