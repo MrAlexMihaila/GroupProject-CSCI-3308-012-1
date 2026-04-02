@@ -129,6 +129,11 @@ app.use(express.static(__dirname + '/')); //allow for anything in resources dire
 
 //basically everything above this line was taken from lab 7
 
+//lab 10 test function
+app.get('/welcome', (req, res) => {
+  res.json({status: 'success', message: 'Welcome!'});
+});
+
 //default, just redirect to home
 app.get('/', (req, res) => {
     res.redirect('/home');
@@ -187,13 +192,14 @@ app.post('/register', async (req, res) => {
 
   try {
     await db.none(
-      `INSERT INTO users(username, password) VALUES($1, $2);`, [req.body.username, hash]
+      `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [req.body.username, hash]
     );
 
+    //res.status(200).json({ message: 'Register Successful!' });
     res.redirect('/login');
   } catch(err)
   {
-    res.redirect('/register'); //redirect to page in case something goes wrong
+    res.status(400).json({ message: 'Failed to register!' });
   }
 });
 
@@ -404,6 +410,6 @@ app.get('/friends', auth, async (req, res) => {
   res.render('pages/friends', {isFriends: true});
 });
 
-//starting server, do not delete the next two lines
-app.listen(3000);
+//starting server, do not delete or modify the next two lines
+module.exports = app.listen(3000);
 console.log('Server is listening on port 3000');
