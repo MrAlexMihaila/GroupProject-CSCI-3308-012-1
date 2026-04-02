@@ -197,8 +197,7 @@ app.post('/register', async (req, res) => {
   }
 });
 
-//in progress, only searches songs right now, need to make it work for artists and albums as well
-//doesn't work with the dropdown
+
 app.get('/search', async (req, res) => {
   console.log("TYPE FROM FRONTEND:", req.query.type);
   const query = req.query.song;
@@ -238,7 +237,7 @@ app.get('/search', async (req, res) => {
 
     if (type === "track") {
       results = response.data.tracks.items;
-      res.render('pages/songs', {
+      res.render('pages/search_song', {
         song_list: results,
         isSongs: true
       });
