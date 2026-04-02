@@ -114,7 +114,7 @@ app.use(
 
 //Makes user available to all templates
 app.use((req, res, next) => {
-  console.log("SESSION ON REQUEST:", req.session.user);
+  //console.log("SESSION ON REQUEST:", req.session.user);
   res.locals.user = req.session.user || null;
   next();
 });
@@ -199,6 +199,7 @@ app.post('/register', async (req, res) => {
     res.redirect('/login');
   } catch(err)
   {
+    //console.log("Database Error:", err.message || err);
     res.status(400).json({ message: 'Failed to register!' });
   }
 });

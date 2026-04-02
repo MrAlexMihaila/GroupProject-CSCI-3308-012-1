@@ -43,7 +43,8 @@ describe('Testing Register API', () => {
     chai
       .request(server)
       .post('/register')
-      .send({username: 'JohnDoe1', password: "password"})
+      .redirects(0)
+      .send({username: 'JohnDoe3', password: "password"})
       .end((err, res) => {
         expect(res).to.have.status(302);
         expect(res).to.redirectTo(/\/login$/);
