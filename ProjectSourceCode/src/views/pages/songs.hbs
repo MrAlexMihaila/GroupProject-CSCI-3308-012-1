@@ -9,15 +9,22 @@
     <span class="text-muted small">{{song_list.length}} results</span>
   </div>
 
-  <!-- Grid -->
-  <div class="row g-4">
-
+  <div class="row-scroll row-1 mb-3">
+    <h3 class="mb-2">Top Charts</h3>
     {{#each song_list}}
       <div class="col-2-4">
         {{> song_card}}
       </div>
     {{/each}}
+  </div>
 
+  <div class="row-scroll row-4">
+    <h3 class="mb-2">Popular</h3>
+    {{#each song_list}}
+      <div class="col-2-4">
+        {{> song_card}}
+      </div>
+    {{/each}}
   </div>
 
 </div>
