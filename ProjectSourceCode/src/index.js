@@ -109,8 +109,15 @@ app.use(
     secret: process.env.SESSION_SECRET,
     saveUninitialized: false,
     resave: false,
-  })
+      })
 );
+
+//Makes user available to all templates
+app.use((req, res, next) => {
+  console.log("SESSION ON REQUEST:", req.session.user);
+  res.locals.user = req.session.user || null;
+  next();
+});
 
 app.use(
   bodyParser.urlencoded({
@@ -121,6 +128,11 @@ app.use(
 app.use(express.static(__dirname + '/')); //allow for anything in resources directory to be used
 
 //basically everything above this line was taken from lab 7
+
+//lab 10 test function
+app.get('/welcome', (req, res) => {
+  res.json({status: 'success', message: 'Welcome!'});
+});
 
 //default, just redirect to home
 app.get('/', (req, res) => {
@@ -183,10 +195,11 @@ app.post('/register', async (req, res) => {
       `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [req.body.username, hash]
     );
 
+    //res.status(200).json({ message: 'Register Successful!' });
     res.redirect('/login');
   } catch(err)
   {
-    res.redirect('/register'); //redirect to page in case something goes wrong
+    res.status(400).json({ message: 'Failed to register!' });
   }
 });
 
@@ -296,7 +309,7 @@ app.get('/songs', async (req, res) => {
   .then(response => {
     const tracks = response.data.tracks.items;
 
-    console.log(tracks); //view all tracks from our "search"
+    //console.log(tracks); //view all tracks from our "search"
     
     // pass the track data to the songs page
     // in the future we should have multiple rows on the song page, each with its own api call, and we can pass in different data for each row (ex: top tracks, new releases, etc.)
@@ -321,11 +334,82 @@ const auth = (req, res, next) => {
   next();
 };
 
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/home');
+  });
+});
+
+app.get('/songs/:id', async (req, res) => {
+  const songID = req.params.id;
+  //console.log(songID);
+  getSpotifyToken()
+  .then(token => {
+    return axios({
+      url: `https://api.spotify.com/v1/tracks/${songID}`,
+      method: "GET",
+      headers: 
+      {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  })
+  .then(response => {
+    const songName = response.data.name;
+    const artistsArray = response.data.artists;
+    const songAlbumImage = response.data.album.images;
+
+    const totalSeconds = Math.floor(response.data.duration_ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+    let loggedIn = false;
+
+    //check if user is logged in
+    if(req.session.user)
+    {
+      loggedIn = true;
+      console.log("we need to add a database check to see if user has already made a review for this");
+    }
+
+    //code to calculate rating number will go here once we get database set up
+    //will just pass a dummy value for now
+    let songRating = 3.0; //out of 5 "stars"
+    
+    res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
+      time: formattedTime, login: loggedIn, songRating: songRating, songID: songID, isSongs: true
+    });
+  })
+  .catch(err => {
+    console.error(err.response?.data || err.message);
+    res.render('pages/songs', { song_list: [], isSongs: true});
+  });
+});
+
+app.post('/addReview', auth, async (req, res) => {
+  //TO DO, get user id from request
+  const {rating, description, songID} = req.body;
+  if(rating < 0 || rating > 5) //somehow got invalid request
+  {
+    console.log("invalid rating?");
+    console.log(rating);
+    return res.status(400).json({
+      error: "Invalid Rating Sent"
+    });
+    //res.redirect(`/songs/${songId}`);
+  }
+  
+  console.log("got a request of...");
+  console.log(req.body);
+  return res.redirect(`/songs/${songID}`);
+});
+
 //can only access friends page if authenticated
 app.get('/friends', auth, async (req, res) => {
   res.render('pages/friends', {isFriends: true});
-})
+});
 
-//starting server, do not delete the next two lines
-app.listen(3000);
+//starting server, do not delete or modify the next two lines
+module.exports = app.listen(3000);
 console.log('Server is listening on port 3000');
