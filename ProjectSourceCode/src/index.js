@@ -109,8 +109,15 @@ app.use(
     secret: process.env.SESSION_SECRET,
     saveUninitialized: false,
     resave: false,
-  })
+      })
 );
+
+//Makes user available to all templates
+app.use((req, res, next) => {
+  console.log("SESSION ON REQUEST:", req.session.user);
+  res.locals.user = req.session.user || null;
+  next();
+});
 
 app.use(
   bodyParser.urlencoded({
@@ -320,6 +327,12 @@ const auth = (req, res, next) => {
   }
   next();
 };
+
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/home');
+  });
+});
 
 app.get('/songs/:id', async (req, res) => {
   const songID = req.params.id;
