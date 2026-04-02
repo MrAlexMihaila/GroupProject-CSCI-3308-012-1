@@ -109,8 +109,15 @@ app.use(
     secret: process.env.SESSION_SECRET,
     saveUninitialized: false,
     resave: false,
-  })
+      })
 );
+
+//Makes user available to all templates
+app.use((req, res, next) => {
+  console.log("SESSION ON REQUEST:", req.session.user);
+  res.locals.user = req.session.user || null;
+  next();
+});
 
 app.use(
   bodyParser.urlencoded({
@@ -321,10 +328,10 @@ const auth = (req, res, next) => {
   next();
 };
 
-//Makes user available to all templates
-app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
-  next();
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/home');
+  });
 });
 
 //can only access friends page if authenticated
