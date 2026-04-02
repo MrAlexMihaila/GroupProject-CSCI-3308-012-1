@@ -164,7 +164,7 @@ app.post('/login', async (req, res) => {
     }
 
     // check if password from request matches with password in DB
-    const match = await bcrypt.compare(req.body.password, user.password);
+    const match = await bcrypt.compare(req.body.password, user.password_hash);
 
     if(!match) //password and/or user do not match
     {
