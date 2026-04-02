@@ -294,40 +294,34 @@ app.get('/search', async (req, res) => {
 app.get('/albums', async (req, res) => {
   res.render('pages/albums', {isAlbums: true});
 });
-
+/*it works, but it doesn't fetch the playlists like it should, Im just searching top hits 2025, or popular songs 2025 so theres some bad data*/ 
 app.get('/songs', async (req, res) => {
-  //this is a test call for now
-  getSpotifyToken()
-  .then(token => {
-    return axios({
+  try {
+    const token = await getSpotifyToken();
+
+    const topChartsResponse = await axios({
       url: "https://api.spotify.com/v1/search",
       method: "GET",
-      headers: 
-      {
-        Authorization: `Bearer ${token}`,
-      },
-       params: 
-      {
-          q: "Pink Floyd", //dummy search value for now
-          type: "track",
-          limit: 15,
-      },
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: "top hits 2026", type: "track", limit: 50 }
     });
-  })
-  //once above api call is done, return the response
-  .then(response => {
-    const tracks = response.data.tracks.items;
+    const topCharts = topChartsResponse.data.tracks.items.filter(t => t !== null);
+    console.log("topCharts count:", topCharts.length);
 
-    //console.log(tracks); //view all tracks from our "search"
-    
-    // pass the track data to the songs page
-    // in the future we should have multiple rows on the song page, each with its own api call, and we can pass in different data for each row (ex: top tracks, new releases, etc.)
-    res.render('pages/songs_tab', { song_list: tracks, isSongs: true });
-  })
-  .catch(err => {
+    const popularResponse = await axios({
+      url: "https://api.spotify.com/v1/search",
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: "yacht rock", type: "track", limit: 50 }
+    });
+    const popular = popularResponse.data.tracks.items.filter(t => t !== null);
+    console.log("popular count:", popular.length);
+
+    res.render('pages/songs_tab', { topCharts, popular, isSongs: true });
+  } catch (err) {
     console.error(err.response?.data || err.message);
-    res.render('pages/songs_tab', { song_list: [], isSongs: true});
-  });
+    res.render('pages/songs_tab', { topCharts: [], popular: [], isSongs: true });
+  }
 });
 
 app.get('/genres', async (req, res) => {
