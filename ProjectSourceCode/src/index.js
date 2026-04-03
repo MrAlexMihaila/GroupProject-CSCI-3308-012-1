@@ -83,6 +83,31 @@ Handlebars.registerHelper('year', (date) => {
   return date ? date.substring(0, 4) : '';
 });
 
+//helper function for review rating calculations
+function convertRatingToLetter(rating)
+{
+    if(rating >= 4.5)
+    {
+      return "A";
+    }
+    else if(rating >= 3.5)
+    {
+      return "B";
+    }
+    else if(rating >= 2.5)
+    {
+      return "C";
+    } 
+    else if(rating >= 1.5)
+    {
+      return "D";
+    }
+    else
+    {
+      return "E";
+    }
+}
+
 // database configuration
 const dbConfig = {
   host: 'db', // the database server
@@ -121,7 +146,7 @@ app.use(
 
 //Makes user available to all templates
 app.use((req, res, next) => {
-  console.log("SESSION ON REQUEST:", req.session.user);
+  //console.log("SESSION ON REQUEST:", req.session.user);
   res.locals.user = req.session.user || null;
   next();
 });
@@ -166,7 +191,7 @@ app.post('/login', async (req, res) => {
     }
 
     // check if password from request matches with password in DB
-    const match = await bcrypt.compare(req.body.password, user.password);
+    const match = await bcrypt.compare(req.body.password, user.password_hash);
 
     if(!match) //password and/or user do not match
     {
@@ -194,7 +219,7 @@ app.post('/register', async (req, res) => {
 
   try {
     await db.none(
-      `INSERT INTO users(username, password) VALUES($1, $2);`, [req.body.username, hash]
+      `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [req.body.username, hash]
     );
 
     res.redirect('/login');
@@ -355,7 +380,7 @@ app.get('/songs_tab/:id', async (req, res) => {
       },
     });
   })
-  .then(response => {
+  .then(async response => {
     const songName = response.data.name;
     const artistsArray = response.data.artists;
     const songAlbumImage = response.data.album.images;
@@ -365,21 +390,38 @@ app.get('/songs_tab/:id', async (req, res) => {
     const seconds = totalSeconds % 60;
     const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-    let loggedIn = false;
+    let loggedIn = !!req.session.user;
 
-    //check if user is logged in
-    if(req.session.user)
+    const reviews = await db.any(
+      `SELECT r.*, u.username
+       FROM reviews r
+       JOIN users u ON r.user_id = u.user_id
+       WHERE r.song_id = $1
+       ORDER BY r.created_at DESC`,
+      [songID]
+    );
+
+    //code to calculate rating number using database
+    let songRating = 0; //out of 5 "stars"
+    let ratingLetter = "No Reviews";
+    if(reviews.length > 0) 
     {
-      loggedIn = true;
-      console.log("we need to add a database check to see if user has already made a review for this");
+      const total = reviews.reduce((sum, r) => sum + r.rating, 0);
+      songRating = total / reviews.length;
+      ratingLetter = convertRatingToLetter(songRating);
     }
 
-    //code to calculate rating number will go here once we get database set up
-    //will just pass a dummy value for now
-    let songRating = 3.0; //out of 5 "stars"
+    //find user review (to change review button to an edit button)
+    let userReview = null;
+    if(req.session.user) 
+    {
+      userReview = reviews.find(
+        r => r.user_id === req.session.user.user_id
+      );
+    }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
-      time: formattedTime, login: loggedIn, songRating: songRating, songID: songID, isSongs: true
+      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, userReview: userReview, songID: songID, isSongs: true
     });
   })
   .catch(err => {
@@ -389,7 +431,7 @@ app.get('/songs_tab/:id', async (req, res) => {
 });
 
 app.post('/addReview', auth, async (req, res) => {
-  //TO DO, get user id from request
+  const userId = req.session.user.user_id;
   const {rating, description, songID} = req.body;
   if(rating < 0 || rating > 5) //somehow got invalid request
   {
@@ -400,10 +442,57 @@ app.post('/addReview', auth, async (req, res) => {
     });
     //res.redirect(`/songs_tab/${songId}`);
   }
-  
-  console.log("got a request of...");
-  console.log(req.body);
-  return res.redirect(`/songs_tab/${songID}`);
+  try{
+    //need to save locally first before we can add review
+    const token = await getSpotifyToken();
+    const response = await axios({
+      url: `https://api.spotify.com/v1/tracks/${songID}`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const track = response.data;
+    const title = track.name;
+    const duration = Math.floor(track.duration_ms / 1000);
+    const releaseDate = track.album.release_date;
+    const trackNumber = track.track_number;
+    const albumId = track.album.id;
+    const albumTitle = track.album.name;
+    const albumImage = track.album.images?.[0]?.url ?? null;
+
+    await db.none(
+      `INSERT INTO albums (album_id, title, release_date, image_url)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (album_id) DO NOTHING`,
+      [albumId, albumTitle, releaseDate, albumImage]
+    );
+
+    await db.none(
+      `INSERT INTO songs (song_id, title, album_id, duration, release_date, track_number)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (song_id) DO NOTHING`,
+      [songID, title, albumId, duration, releaseDate, trackNumber]
+    );
+
+    //finally attempt to insert review into table
+    await db.none(
+      `INSERT INTO reviews (user_id, song_id, rating, review_text)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, song_id)
+       DO UPDATE SET 
+         rating = EXCLUDED.rating,
+         review_text = EXCLUDED.review_text,
+         updated_at = CURRENT_TIMESTAMP;`,
+      [userId, songID, rating, description]
+    );
+
+    return res.status(200).json({ success: true });
+  } catch(err){
+    console.log("error inserting review into database", err.message);
+    return res.status(500).json({
+      error: "Database error"
+    });
+  }
 });
 
 //can only access friends page if authenticated

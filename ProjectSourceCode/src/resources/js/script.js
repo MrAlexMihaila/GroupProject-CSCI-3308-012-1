@@ -58,5 +58,15 @@ async function handleSubmit()
         body: JSON.stringify(review)
     });
 
+    //force reload the page
+    if(res.ok)
+    {
+        window.location.reload();
+    }
+    else 
+    {
+        alert("Something went wrong with your review. Please try again.");
+    }
+
     return false;
 }

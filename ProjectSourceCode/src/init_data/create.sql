@@ -1,7 +1,7 @@
 CREATE TABLE users (
   user_id SERIAL PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE,
-  email VARCHAR(100) NOT NULL UNIQUE,
+  --email VARCHAR(100) NOT NULL UNIQUE,--
   password_hash VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -63,7 +63,7 @@ CREATE TABLE reviews (
   user_id INT NOT NULL,
   song_id VARCHAR(50),
   album_id VARCHAR(50),
-  rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  rating SMALLINT NOT NULL CHECK (rating BETWEEN 0 AND 5),
   review_text TEXT,
   likes INT DEFAULT 0,
   dislikes INT DEFAULT 0,
