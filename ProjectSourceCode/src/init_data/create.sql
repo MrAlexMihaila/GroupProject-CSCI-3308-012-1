@@ -4,7 +4,7 @@ CREATE TABLE users (
   email VARCHAR(100) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+); 
 
 CREATE TABLE follows (
   following_user_id INT NOT NULL,

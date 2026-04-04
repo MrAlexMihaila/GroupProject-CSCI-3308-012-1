@@ -322,18 +322,25 @@ const auth = (req, res, next) => {
 };
 
 //can only access friends page if authenticated
-app.get('/friends', auth, async (req, res) => {
+app.get('/friends', async (req, res) => {
   const search = req.query.search ? req.query.search.trim() : '';
-  const currentUserId = req.session.user.user_id;
+  // const currentUserId = req.session.user.user_id;
 
   try {
+    console.log(search);
+    db.any('SELECT * FROM users').then(data => {
+      console.table(data);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
     const users = await db.any(
       `SELECT user_id, username, DATE(created_at) AS created_at
        FROM users
-       WHERE user_id <> $1
-         AND username ILIKE $2
-       ORDER BY username ASC`,
-      [currentUserId, `%${search}%`]
+       WHERE username ILIKE user_a
+       ORDER BY username ASC
+       LIMIT 20`,
+      [`%${search}%`]
     );
 
     const usersDisplay = users.map((u) => ({
