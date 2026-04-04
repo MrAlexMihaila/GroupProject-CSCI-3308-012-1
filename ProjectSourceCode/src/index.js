@@ -229,6 +229,53 @@ app.post('/register', async (req, res) => {
   }
 });
 
+//get route for spotify login
+app.get('/spotify-login', (req, res) => {
+  const scope = "streaming user-read-email user-read-private";
+
+  //generate parameters for link
+  let authQueryParameters = new URLSearchParams({
+    response_type: "code",
+    client_id: process.env.SPOTIFY_CLIENT_ID,
+    scope: scope,
+    redirect_uri: "http://localhost:3000/spotify-callback"
+  });
+
+  res.redirect('https://accounts.spotify.com/authorize/?' + authQueryParameters.toString());
+});
+
+//get route for spotify callback
+app.get('/spotify-callback', async (req, res) => {
+  const code = req.query.code;
+
+  try
+  {
+    const response = await axios({
+      method: 'POST',
+      url: 'https://accounts.spotify.com/api/token',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + Buffer
+          .from(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET)
+          .toString('base64'),
+      },
+      data: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: "http://localhost:3000/spotify-callback",
+      }).toString(),
+    });
+
+    req.session.spotifyAccessToken = response.data.access_token;
+
+    console.log("Connected with Spotify!");
+
+    res.redirect('/home');
+  }catch (err) {
+    console.error(err.response?.data || err.message);
+    res.send("Spotify login failed");
+  }
+});
 
 app.get('/search', async (req, res) => {
   console.log("TYPE FROM FRONTEND:", req.query.type);
