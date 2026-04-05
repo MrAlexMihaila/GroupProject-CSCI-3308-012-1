@@ -83,6 +83,34 @@ Handlebars.registerHelper('year', (date) => {
   return date ? date.substring(0, 4) : '';
 });
 
+//for individual song page
+Handlebars.registerHelper("gradeFromRating", (rating) => {
+  if(rating >= 5)
+  {
+    return "A";
+  }
+  else if(rating >= 4)
+  {
+    return "B";
+  }
+  else if(rating >= 3)
+  {
+    return "C";
+  }
+  else if(rating >= 2)
+  {
+    return "D";
+  }
+  else if(rating >= 1)
+  {
+    return "E";
+  }
+  else
+  {
+    return "F";
+  }
+});
+
 //helper function for review rating calculations
 function convertRatingToLetter(rating)
 {
@@ -468,7 +496,8 @@ app.get('/songs_tab/:id', async (req, res) => {
     }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
-      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, userReview: userReview, songID: songID, isSongs: true
+      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, userReview: userReview, 
+      songID: songID, spotifyToken: req.session.spotifyAccessToken || null, isSongs: true 
     });
   })
   .catch(err => {
