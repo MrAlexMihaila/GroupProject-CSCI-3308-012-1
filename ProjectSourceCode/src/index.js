@@ -92,6 +92,15 @@ Handlebars.registerHelper('formatNumber', (num) => {
 Handlebars.registerHelper('year', (date) => {
   return date ? date.substring(0, 4) : '';
 });
+Handlebars.registerHelper('formatDuration', (ms) => {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+});
+Handlebars.registerHelper('limit', (arr, n) => {
+  return arr ? arr.slice(0, n) : [];
+});
 
 //for individual song page
 Handlebars.registerHelper("gradeFromRating", (rating) => {
@@ -420,6 +429,53 @@ app.get('/search', async (req, res) => {
       isSongs: true,
       error: "Search Failed"
     });
+  }
+});
+
+//individual artist page
+app.get('/artist/:id', async (req, res) => {
+  const artistID = req.params.id;
+
+  try {
+    const token = await getSpotifyToken();
+
+    // Fetch artist details
+    const artistResponse = await axios({
+      url: `https://api.spotify.com/v1/artists/${artistID}`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    // Fetch artist's top tracks
+    const topTracksResponse = await axios({
+      url: `https://api.spotify.com/v1/artists/${artistID}/top-tracks`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { market: "US" },
+    });
+
+    // Fetch artist's albums
+    const albumsResponse = await axios({
+      url: `https://api.spotify.com/v1/artists/${artistID}/albums`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { include_groups: "album,single", market: "US", limit: 50 },
+    });
+
+    const artist = artistResponse.data;
+    const topTracks = topTracksResponse.data.tracks;
+    const albums = albumsResponse.data.items;
+
+    res.render('pages/individual_artist', {  // <-- updated here
+      artist,
+      topTracks,
+      albums,
+      isArtists: true
+    });
+
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.redirect('/search');
   }
 });
 
