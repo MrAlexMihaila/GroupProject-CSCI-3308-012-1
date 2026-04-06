@@ -159,6 +159,7 @@ window.onSpotifyWebPlaybackSDKReady = () =>
 
         if(!token) 
         {
+            //disable the player here and ask the user to connect with spotify?
             console.log("No Spotify token, did you log in?");
             return;
         }
@@ -169,7 +170,7 @@ window.onSpotifyWebPlaybackSDKReady = () =>
             volume: 0.5
         });
 
-        setPlayer(player);
+        setPlayerInstance(player);
 
         player.addListener('ready', ({ device_id }) => 
         {
@@ -200,18 +201,21 @@ function setupPlayback(device_id, token)
         })
     })
     .then(() => {
-        const songID = document.getElementById("song-page").dataset.songId;
+        const songURI = document.getElementById("song-page").dataset.songUri;
 
-        return fetch(`https://api.spotify.com/v1/me/player/play`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                uris: [`spotify:track:${songID}`]
-            })
-        });
+        try{
+            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ uris: [songURI] }),
+                headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+                },
+            });
+        } catch(err)
+        {
+            console.log(err);
+        }
     })
     .catch(err => {
         console.error("Playback error:", err);

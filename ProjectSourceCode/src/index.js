@@ -8,6 +8,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session'); // To set the session object. To store or access session data, use the `req.session`, which is (generally) serialized as JSON by the store.
 const bcrypt = require('bcryptjs'); //  To hash passwords
 const axios = require('axios'); // To make HTTP requests from our server. We'll learn more about it in Part C.
+const { timeStamp } = require('console');
 
 //specific spotify functions
 let spotifyToken = null;
@@ -51,6 +52,16 @@ function getSpotifyToken()
     .catch(err => {
       console.error("Error getting Spotify Token, maybe an API issue?", err.response?.data || err.message);
     });
+};
+
+//random string for spotify web playback sdk
+const generateRandomString = (length) => {
+  let text = '';
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
 };
 
 const hbs = handlebars.create({
@@ -259,14 +270,19 @@ app.post('/register', async (req, res) => {
 
 //get route for spotify login
 app.get('/spotify-login', (req, res) => {
-  const scope = "streaming user-read-email user-read-private";
+  const scope = "streaming user-read-email user-read-private user-modify-playback-state";
+  const state = generateRandomString(16);
+
+  //save for later
+  req.session.spotifyAuthState = state;
 
   //generate parameters for link
   let authQueryParameters = new URLSearchParams({
     response_type: "code",
     client_id: process.env.SPOTIFY_CLIENT_ID,
     scope: scope,
-    redirect_uri: "http://localhost:3000/spotify-callback"
+    redirect_uri: "http://127.0.0.1:3000/spotify-callback",
+    state: state
   });
 
   res.redirect('https://accounts.spotify.com/authorize/?' + authQueryParameters.toString());
@@ -275,6 +291,17 @@ app.get('/spotify-login', (req, res) => {
 //get route for spotify callback
 app.get('/spotify-callback', async (req, res) => {
   const code = req.query.code;
+  const state = req.query.state || null;
+  const storedState = req.session.spotifyAuthState || null;
+
+  if(state === null || state !== storedState)
+  {
+    console.error("State mismatch?");
+    return res.redirect('/home');
+  }
+
+  //we don't need the state anymore, so delete it
+  delete req.session.spotifyAuthState;
 
   try
   {
@@ -290,7 +317,7 @@ app.get('/spotify-callback', async (req, res) => {
       data: new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: "http://localhost:3000/spotify-callback",
+        redirect_uri: "http://127.0.0.1:3000/spotify-callback",
       }).toString(),
     });
 
@@ -391,6 +418,7 @@ app.get('/songs', async (req, res) => {
   //this is a test call for now
   getSpotifyToken()
   .then(token => {
+    
     return axios({
       url: "https://api.spotify.com/v1/search",
       method: "GET",
@@ -459,11 +487,13 @@ app.get('/songs_tab/:id', async (req, res) => {
     const songName = response.data.name;
     const artistsArray = response.data.artists;
     const songAlbumImage = response.data.album.images;
+    const songURI = response.data.uri;
 
     const totalSeconds = Math.floor(response.data.duration_ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
 
     let loggedIn = !!req.session.user;
 
@@ -476,9 +506,13 @@ app.get('/songs_tab/:id', async (req, res) => {
       [songID]
     );
 
+    //search database for timestamp comments
+    const timestampComments = null;
+
     //code to calculate rating number using database
     let songRating = 0; //out of 5 "stars"
     let ratingLetter = "No Reviews";
+
     if(reviews.length > 0) 
     {
       const total = reviews.reduce((sum, r) => sum + r.rating, 0);
@@ -494,10 +528,16 @@ app.get('/songs_tab/:id', async (req, res) => {
         r => r.user_id === req.session.user.user_id
       );
     }
+
+    let userTimestampComment = null;
+    if(req.session.user)
+    {
+      console.log("search for user timestamp review will be here");
+    }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
-      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, userReview: userReview, 
-      songID: songID, spotifyToken: req.session.spotifyAccessToken || null, isSongs: true 
+      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: timestampComments, userReview: userReview, 
+      userTimestampComment: userTimestampComment, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null, isSongs: true 
     });
   })
   .catch(err => {
