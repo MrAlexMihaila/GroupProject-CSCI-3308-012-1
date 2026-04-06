@@ -436,7 +436,7 @@ app.get('/songs', async (req, res) => {
       url: "https://api.spotify.com/v1/search",
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
-      params: { q: "top hits 2026", type: "track", limit: 50 }
+      params: { q: "top hits 2025", type: "track", limit: 50 }
     });
     const topCharts = topChartsResponse.data.tracks.items.filter(t => t !== null);
     console.log("topCharts count:", topCharts.length);
