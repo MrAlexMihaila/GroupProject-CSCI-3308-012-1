@@ -388,6 +388,51 @@ app.get('/songs_tab/:id', async (req, res) => {
   });
 });
 
+app.get('/albums_tab/:id', async (req, res) => {
+  const albumID = req.params.id;
+  getSpotifyToken()
+  .then(token => {
+    return axios({
+      url: `https://api.spotify.com/v1/albums/${albumID}`,
+      method: "GET",
+      headers:
+      {
+        Authorization: `Bearer ${token}`
+      },
+    });
+  })
+  .then(response => {
+    const albumName = response.data.name;
+    const artistsArray = response.data.artists;
+    const albumImage = response.data.album.images;
+
+    const tracksArray = 0;
+
+    
+
+    let loggedIn = false;
+
+    //check if user is logged in
+    if(req.session.user)
+    {
+      loggedIn = true;
+      console.log("we need to add a database check to see if user has already made a review for this");
+    }
+
+    //code to calculate rating number will go here once we get database set up
+    //will just pass a dummy value for now
+    let albumRating = 3.0; //out of 5 "stars"
+    
+
+    res.render('pages/album', {name: albumName, artists: artistsArray, albumImages: albumImage, 
+      tracksArray: tracksArray, login: loggedIn, albumRating: albumRating, albumID: albumID, isAlbums: true
+    });
+  });
+
+  
+
+});
+
 app.post('/addReview', auth, async (req, res) => {
   //TO DO, get user id from request
   const {rating, description, songID} = req.body;
