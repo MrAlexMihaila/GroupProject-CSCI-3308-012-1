@@ -759,53 +759,48 @@ app.get('/song/:id', async (req, res) => {
 
 app.get('/albums_tab/:id', async (req, res) => {
   const albumID = req.params.id;
-  try {
-    const token = await getSpotifyToken();
-    const response = await axios({
+  getSpotifyToken()
+  .then(token => {
+    return axios({
       url: `https://api.spotify.com/v1/albums/${albumID}`,
       method: "GET",
-      headers: {
+      headers:
+      {
         Authorization: `Bearer ${token}`
       },
     });
-  
+  })
+  .then(response => {
     const albumName = response.data.name;
     const artistsArray = response.data.artists;
-    const albumImage = response.data.images;
-    const tracksArray = response.data.tracks.items.map(track => {
-      // map time to minutes and seconds
-      const totalSeconds = Math.floor(track.duration_ms / 1000);
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      return {
-        ...track,
-        formattedDuration: `${minutes}:${seconds.toString().padStart(2, '0')}`
-      };
-    });
+    const albumImage = response.data.album.images;
 
-    let loggedIn = !!req.session.user;
+    const tracksArray = 0;
+
+    
+
+    let loggedIn = false;
+
+    //check if user is logged in
+    if(req.session.user)
+    {
+      loggedIn = true;
+      console.log("we need to add a database check to see if user has already made a review for this");
+    }
 
     //code to calculate rating number will go here once we get database set up
     //will just pass a dummy value for now
     let albumRating = 3.0; //out of 5 "stars"
     
 
-    res.render('pages/album', {
-      name: albumName,
-      artists: artistsArray,
-      albumImages: albumImage,
-      tracks: tracksArray,
-      login: loggedIn,
-      albumRating: albumRating,
-      albumID: albumID,
-      isAlbums: true
+    res.render('pages/album', {name: albumName, artists: artistsArray, albumImages: albumImage, 
+      tracksArray: tracksArray, login: loggedIn, albumRating: albumRating, albumID: albumID, isAlbums: true
     });
-  } catch (err) {
-    console.error(err.response?.data || err.message);
-    res.redirect('/albums');
-  }
-});
+  });
 
+  
+
+});
 
 app.post('/addReview', auth, async (req, res) => {
   const userId = req.session.user.user_id;
