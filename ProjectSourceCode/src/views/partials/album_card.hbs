@@ -1,0 +1,39 @@
+<a href="/album/{{id}}" class="text-decoration-none text-dark">
+  <div class="card h-100 album-card border-0">
+
+    <!-- Album Cover (FULL WIDTH SQUARE) -->
+    <div class="album-img-wrapper">
+      {{#if images.[0].url}}
+        <img src="{{images.[0].url}}" class="album-img-full">
+      {{else}}
+        <div class="album-img-full bg-secondary text-white d-flex align-items-center justify-content-center">
+          No Image
+        </div>
+      {{/if}}
+    </div>
+
+    <!-- Content -->
+    <div class="card-body text-center">
+
+      <!-- Album Name -->
+      <h6 class="fw-semibold mb-1 text-truncate-2">
+        {{name}}
+      </h6>
+
+      <!-- Artists -->
+      <p class="text-muted small mb-1 text-truncate-1">
+        {{#each artists}}
+          {{#if @index}}, {{/if}}{{this.name}}
+        {{/each}}
+      </p>
+
+      <!-- Year -->
+      {{#if release_date}}
+        <p class="text-muted small mb-0">
+          {{year release_date}}
+        </p>
+      {{/if}}
+
+    </div>
+  </div>
+</a>
