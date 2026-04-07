@@ -403,7 +403,16 @@ app.get('/albums_tab/:id', async (req, res) => {
     const albumName = response.data.name;
     const artistsArray = response.data.artists;
     const albumImage = response.data.images;
-    const tracksArray = response.data.tracks.items;
+    const tracksArray = response.data.tracks.items.map(track => {
+      // map time to minutes and seconds
+      const totalSeconds = Math.floor(track.duration_ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return {
+        ...track,
+        formattedDuration: `${minutes}:${seconds.toString().padStart(2, '0')}`
+      };
+    });
 
     let loggedIn = !!req.session.user;
 
