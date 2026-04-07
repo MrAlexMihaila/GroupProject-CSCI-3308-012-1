@@ -327,21 +327,19 @@ app.get('/friends', async (req, res) => {
   // const currentUserId = req.session.user.user_id;
 
   try {
-    console.log(search);
-    db.any('SELECT * FROM users').then(data => {
-      console.table(data);
-    })
-    .catch(error => {
-      console.error('Error:', error);
-    });
-    const users = await db.any(
-      `SELECT user_id, username, DATE(created_at) AS created_at
-       FROM users
-       WHERE username ILIKE user_a
-       ORDER BY username ASC
-       LIMIT 20`,
-      [`%${search}%`]
-    );
+    const query = `
+      SELECT user_id, username, DATE(created_at) AS created_at
+      FROM users
+      WHERE username ILIKE $1
+      ORDER BY username ASC
+      LIMIT 20
+    `;
+
+    // The value includes the wildcards
+    const values = [`%${search}%`];
+
+    // Execute query and get results
+    const users = await db.any(query, values);
 
     const usersDisplay = users.map((u) => ({
       ...u,
