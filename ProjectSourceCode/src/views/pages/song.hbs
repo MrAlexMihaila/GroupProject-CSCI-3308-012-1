@@ -148,6 +148,44 @@
     </div>
 </div>
 
+<!-- modal to add a timestamp -->
+<div class="modal" tabindex="-1" id="add_timestamp_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Add Timestamp Comment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <form onsubmit="return addTimestampComment();">
+
+                    <div class="mb-3">
+                        <label class="form-label">Timestamp</label>
+                        <input type="text" id="timestamp_display" class="form-control" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Comment</label>
+                        <input type="text" id="timestamp_comment" class="form-control">
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Close
+                        </button>
+                        <button class="btn btn-primary" type="submit">
+                            Save Comment
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     //just for token for web playback
     const SPOTIFY_TOKEN = "{{spotifyToken}}";
