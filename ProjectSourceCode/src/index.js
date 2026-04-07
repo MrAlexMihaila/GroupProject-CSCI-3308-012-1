@@ -173,6 +173,7 @@ app.post('/login', async (req, res) => {
 
     req.session.user = user;
     req.session.save();
+    
     res.redirect('/home'); //default, probably change
   } catch(err)
   {
@@ -187,10 +188,10 @@ app.get('/register', (req, res) => {
 
 //register post route
 app.post('/register', async (req, res) => {
-  //hash the password using bcrypt library
-  const hash = await bcrypt.hash(req.body.password, 10);
-
   try {
+    //hash the password using bcrypt library
+    const hash = await bcrypt.hash(req.body.password, 10);
+
     await db.none(
       `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [req.body.username, hash]
     );
