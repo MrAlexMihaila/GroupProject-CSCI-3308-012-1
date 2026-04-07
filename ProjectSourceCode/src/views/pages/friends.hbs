@@ -19,9 +19,19 @@
       {{#each users}}
         <div class="col">
           <div class="card h-100 shadow-sm">
-            <div class="card-body">
+            <div class="card-body d-flex flex-column">
               <h5 class="card-title">{{username}}</h5>
-              <p class="card-text text-muted mb-0">Joined: {{created_at}}</p>
+              <p class="card-text text-muted mb-3">Joined: {{created_at}}</p>
+
+              <form method="POST" action="/friends/add" class="mt-auto">
+                <input type="hidden" name="userId" value="{{user_id}}" />
+                <input type="hidden" name="search" value="{{search}}" />
+                {{#if isFollowing}}
+                  <button type="button" class="btn btn-secondary w-100" disabled>Added</button>
+                {{else}}
+                  <button type="submit" class="btn btn-primary w-100">Add</button>
+                {{/if}}
+              </form>
             </div>
           </div>
         </div>

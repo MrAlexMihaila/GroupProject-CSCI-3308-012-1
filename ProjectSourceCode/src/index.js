@@ -324,32 +324,42 @@ const auth = (req, res, next) => {
 //can only access friends page if authenticated
 app.get('/friends', async (req, res) => {
   const search = req.query.search ? req.query.search.trim() : '';
-  // const currentUserId = req.session.user.user_id;
+  const currentUserId = req.session.user?.user_id;
 
   try {
     const query = `
       SELECT user_id, username, DATE(created_at) AS created_at
       FROM users
-      WHERE username ILIKE $1
+      WHERE username ILIKE $1 AND user_id <> $2
       ORDER BY username ASC
       LIMIT 20
     `;
 
     // The value includes the wildcards
-    const values = [`%${search}%`];
+    const values = [`%${search}%`, currentUserId || 0];
 
-    // Execute query and get results
     const users = await db.any(query, values);
+
+    const followQuery = `
+      SELECT followed_user_id
+      FROM follows
+      WHERE following_user_id = $1
+    `;
+
+    const followedRows = await db.any(followQuery, [currentUserId || 0]);
+    const followedIds = new Set(followedRows.map((row) => row.followed_user_id));
 
     const usersDisplay = users.map((u) => ({
       ...u,
       created_at: u.created_at,
+      isFollowing: followedIds.has(u.user_id),
     }));
 
     res.render('pages/friends', {
       isFriends: true,
       users: usersDisplay,
       search,
+      currentUserId,
     });
   } catch (err) {
     console.error('Friends page load error:', err);
@@ -358,6 +368,37 @@ app.get('/friends', async (req, res) => {
       users: [],
       search,
       error: 'Unable to load friends. Please try again later.',
+    });
+  }
+});
+
+app.post('/friends/add', async (req, res) => {
+  const currentUserId = req.session.user?.user_id;
+  const { userId } = req.body;
+
+  if (!currentUserId) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+
+  if (!userId) {
+    return res.status(400).json({ message: 'Missing user ID' });
+  }
+
+  try {
+    await db.none(
+      `INSERT INTO follows(following_user_id, followed_user_id) VALUES($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [currentUserId, userId]
+    );
+
+    res.redirect('/friends?search=' + encodeURIComponent(req.body.search || ''));
+  } catch (err) {
+    console.error('Add friend error:', err);
+    res.status(500).render('pages/friends', {
+      isFriends: true,
+      users: [],
+      search: req.body.search || '',
+      error: 'Unable to add friend. Please try again later.',
     });
   }
 });
