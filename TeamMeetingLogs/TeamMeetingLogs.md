@@ -8,3 +8,6 @@
 4/7/2026
 - Discussion about extra credit for the project
 - Discussion about next steps for the project
+- Put the meeting minutes from previous weeks in milestone submissions
+- Album page created, can be integrated with other pages when ready
+- Review system still needs work
