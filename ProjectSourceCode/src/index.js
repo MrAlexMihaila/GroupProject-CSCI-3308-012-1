@@ -415,7 +415,7 @@ app.get('/albums_tab/:id', async (req, res) => {
     res.render('pages/album', {
       name: albumName,
       artists: artistsArray,
-      albumImages: albumImages,
+      albumImages: albumImage,
       tracks: tracksArray,
       login: loggedIn,
       albumRating: albumRating,
