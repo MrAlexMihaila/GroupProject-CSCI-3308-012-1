@@ -355,6 +355,8 @@ app.get('/songs', async (req, res) => {
   try {
     const token = await getSpotifyToken();
 
+    let USATop50PlaylistID = "3DLP1u57jcYremGNWw9Gfn"; //playlist id for a custom playlist i made with the current top 50 songs in the usa
+
     const topChartsResponse = await axios({
       url: "https://api.spotify.com/v1/search",
       method: "GET",
