@@ -65,6 +65,11 @@
 </ul>
       <div class="d-grid gap-2">
         {{#if user}}
+          {{#if userLoggedIntoSpotify}}
+            <a class="btn btn-success rounded-0" roll="button">Connected With Spotify</a>
+          {{else}}
+            <a class="btn btn-outline-success rounded-0" href="/spotify-login" roll="button">Connect With Spotify</a>
+          {{/if}}
           <a class="btn btn-outline-danger rounded-0" href="/logout" role="button">Logout</a>
         {{else}}
           <a class="btn btn-outline-primary rounded-0" href="/login" role="button">Log In</a>

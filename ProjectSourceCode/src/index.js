@@ -53,6 +53,16 @@ function getSpotifyToken()
     });
 };
 
+//random string for spotify web playback sdk
+const generateRandomString = (length) => {
+  let text = '';
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+};
+
 const hbs = handlebars.create({
   extname: 'hbs',
   layoutsDir: __dirname + '/views/layouts',
@@ -82,6 +92,59 @@ Handlebars.registerHelper('formatNumber', (num) => {
 Handlebars.registerHelper('year', (date) => {
   return date ? date.substring(0, 4) : '';
 });
+
+//for individual song page
+Handlebars.registerHelper("gradeFromRating", (rating) => {
+  if(rating >= 5)
+  {
+    return "A";
+  }
+  else if(rating >= 4)
+  {
+    return "B";
+  }
+  else if(rating >= 3)
+  {
+    return "C";
+  }
+  else if(rating >= 2)
+  {
+    return "D";
+  }
+  else if(rating >= 1)
+  {
+    return "E";
+  }
+  else
+  {
+    return "F";
+  }
+});
+
+//helper function for review rating calculations
+function convertRatingToLetter(rating)
+{
+    if(rating >= 4.5)
+    {
+      return "A";
+    }
+    else if(rating >= 3.5)
+    {
+      return "B";
+    }
+    else if(rating >= 2.5)
+    {
+      return "C";
+    } 
+    else if(rating >= 1.5)
+    {
+      return "D";
+    }
+    else
+    {
+      return "E";
+    }
+}
 
 // database configuration
 const dbConfig = {
@@ -123,6 +186,13 @@ app.use(
 app.use((req, res, next) => {
   //console.log("SESSION ON REQUEST:", req.session.user);
   res.locals.user = req.session.user || null;
+  //user logged into spotify
+  let userLoggedIntoSpotify = false;
+  if(req.session.spotifyAccessToken)
+  {
+    userLoggedIntoSpotify = true;
+  }
+  res.locals.userLoggedIntoSpotify = userLoggedIntoSpotify;
   next();
 });
 
@@ -212,6 +282,69 @@ app.post('/register', async (req, res) => {
   }
 });
 
+//get route for spotify login
+app.get('/spotify-login', (req, res) => {
+  const scope = "streaming user-read-email user-read-private user-modify-playback-state";
+  const state = generateRandomString(16);
+
+  //save for later
+  req.session.spotifyAuthState = state;
+
+  //generate parameters for link
+  let authQueryParameters = new URLSearchParams({
+    response_type: "code",
+    client_id: process.env.SPOTIFY_CLIENT_ID,
+    scope: scope,
+    redirect_uri: "http://127.0.0.1:3000/spotify-callback",
+    state: state
+  });
+
+  res.redirect('https://accounts.spotify.com/authorize/?' + authQueryParameters.toString());
+});
+
+//get route for spotify callback
+app.get('/spotify-callback', async (req, res) => {
+  const code = req.query.code;
+  const state = req.query.state || null;
+  const storedState = req.session.spotifyAuthState || null;
+
+  if(state === null || state !== storedState)
+  {
+    console.error("State mismatch?");
+    return res.redirect('/home');
+  }
+
+  //we don't need the state anymore, so delete it
+  delete req.session.spotifyAuthState;
+
+  try
+  {
+    const response = await axios({
+      method: 'POST',
+      url: 'https://accounts.spotify.com/api/token',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + Buffer
+          .from(process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET)
+          .toString('base64'),
+      },
+      data: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: "http://127.0.0.1:3000/spotify-callback",
+      }).toString(),
+    });
+
+    req.session.spotifyAccessToken = response.data.access_token;
+
+    console.log("Connected with Spotify!");
+
+    res.redirect('/home');
+  }catch (err) {
+    console.error(err.response?.data || err.message);
+    res.send("Spotify login failed");
+  }
+});
 
 app.get('/search', async (req, res) => {
   console.log("TYPE FROM FRONTEND:", req.query.type);
@@ -299,6 +432,7 @@ app.get('/songs', async (req, res) => {
   //this is a test call for now
   getSpotifyToken()
   .then(token => {
+    
     return axios({
       url: "https://api.spotify.com/v1/search",
       method: "GET",
@@ -363,31 +497,82 @@ app.get('/songs_tab/:id', async (req, res) => {
       },
     });
   })
-  .then(response => {
+  .then(async response => {
     const songName = response.data.name;
     const artistsArray = response.data.artists;
     const songAlbumImage = response.data.album.images;
+    const songURI = response.data.uri;
 
     const totalSeconds = Math.floor(response.data.duration_ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
-    let loggedIn = false;
 
-    //check if user is logged in
-    if(req.session.user)
+    let loggedIn = !!req.session.user;
+
+    const reviews = await db.any(
+      `SELECT r.*, u.username
+       FROM reviews r
+       JOIN users u ON r.user_id = u.user_id
+       WHERE r.song_id = $1
+       ORDER BY r.created_at DESC`,
+      [songID]
+    );
+
+    //search database for timestamp comments
+    const timestampComments = await db.any(
+      `SELECT sc.*, u.username 
+      FROM song_comments sc
+      JOIN users u ON sc.user_id = u.user_id
+      WHERE sc.song_id = $1
+      ORDER BY sc.timestamp_seconds ASC`,
+      [songID]
+    );
+
+    //convert the time into a string in order to get the correct timestamp position for the comment
+    const formattedComments = timestampComments.map(c => ({
+      ...c,
+      formattedTime: `${Math.floor(c.timestamp_seconds / 60)}:${(c.timestamp_seconds % 60).toString().padStart(2, '0')}`
+    }));
+
+    //code to calculate rating number using database
+    let songRating = 0; //out of 5 "stars"
+    let ratingLetter = "No Reviews";
+
+    if(reviews.length > 0) 
     {
-      loggedIn = true;
-      console.log("we need to add a database check to see if user has already made a review for this");
+      const total = reviews.reduce((sum, r) => sum + r.rating, 0);
+      songRating = total / reviews.length;
+      ratingLetter = convertRatingToLetter(songRating);
     }
 
-    //code to calculate rating number will go here once we get database set up
-    //will just pass a dummy value for now
-    let songRating = 3.0; //out of 5 "stars"
+    //find user review (to change review button to an edit button)
+    let userReview = null;
+    if(req.session.user) 
+    {
+      userReview = reviews.find(
+        r => r.user_id === req.session.user.user_id
+      );
+    }
+
+    let userTimestampComment = null;
+    if(req.session.user)
+    {
+      console.log("search for user timestamp review will be here");
+    }
+
+    //user logged into spotify
+    let userLoggedIntoSpotify = false;
+    if(req.session.spotifyAccessToken)
+    {
+      userLoggedIntoSpotify = true;
+    }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
-      time: formattedTime, login: loggedIn, songRating: songRating, songID: songID, isSongs: true
+      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: timestampComments, userReview: userReview, 
+      userTimestampComment: userTimestampComment, songID: songID, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null,
+      userLoggedIntoSpotify: userLoggedIntoSpotify, isSongs: true 
     });
   })
   .catch(err => {
@@ -397,7 +582,7 @@ app.get('/songs_tab/:id', async (req, res) => {
 });
 
 app.post('/addReview', auth, async (req, res) => {
-  //TO DO, get user id from request
+  const userId = req.session.user.user_id;
   const {rating, description, songID} = req.body;
   if(rating < 0 || rating > 5) //somehow got invalid request
   {
@@ -408,10 +593,115 @@ app.post('/addReview', auth, async (req, res) => {
     });
     //res.redirect(`/songs_tab/${songId}`);
   }
-  
-  console.log("got a request of...");
-  console.log(req.body);
-  return res.redirect(`/songs_tab/${songID}`);
+  try{
+    //need to save locally first before we can add review
+    const token = await getSpotifyToken();
+    const response = await axios({
+      url: `https://api.spotify.com/v1/tracks/${songID}`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const track = response.data;
+    const title = track.name;
+    const duration = Math.floor(track.duration_ms / 1000);
+    const releaseDate = track.album.release_date;
+    const trackNumber = track.track_number;
+    const albumId = track.album.id;
+    const albumTitle = track.album.name;
+    const albumImage = track.album.images?.[0]?.url ?? null;
+
+    await db.none(
+      `INSERT INTO albums (album_id, title, release_date, image_url)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (album_id) DO NOTHING`,
+      [albumId, albumTitle, releaseDate, albumImage]
+    );
+
+    await db.none(
+      `INSERT INTO songs (song_id, title, album_id, duration, release_date, track_number)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (song_id) DO NOTHING`,
+      [songID, title, albumId, duration, releaseDate, trackNumber]
+    );
+
+    //finally attempt to insert review into table
+    await db.none(
+      `INSERT INTO reviews (user_id, song_id, rating, review_text)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, song_id)
+       DO UPDATE SET 
+         rating = EXCLUDED.rating,
+         review_text = EXCLUDED.review_text,
+         updated_at = CURRENT_TIMESTAMP;`,
+      [userId, songID, rating, description]
+    );
+
+    return res.status(200).json({ success: true });
+  } catch(err){
+    console.log("error inserting review into database", err.message);
+    return res.status(500).json({
+      error: "Database error"
+    });
+  }
+});
+
+app.post('/addTimestampComment', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+  const {songID, timestampSeconds, commentText} = req.body;
+
+  try{
+    //need to save locally first before we can add review
+    const token = await getSpotifyToken();
+    const response = await axios({
+      url: `https://api.spotify.com/v1/tracks/${songID}`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const track = response.data;
+    const title = track.name;
+    const duration = Math.floor(track.duration_ms / 1000);
+    const releaseDate = track.album.release_date;
+    const trackNumber = track.track_number;
+    const albumId = track.album.id;
+    const albumTitle = track.album.name;
+    const albumImage = track.album.images?.[0]?.url ?? null;
+
+    await db.none(
+      `INSERT INTO albums (album_id, title, release_date, image_url)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (album_id) DO NOTHING`,
+      [albumId, albumTitle, releaseDate, albumImage]
+    );
+
+    await db.none(
+      `INSERT INTO songs (song_id, title, album_id, duration, release_date, track_number)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (song_id) DO NOTHING`,
+      [songID, title, albumId, duration, releaseDate, trackNumber]
+    );
+
+    //finally attempt to insert timestamp comment into table
+    await db.none(
+      `INSERT INTO song_comments (user_id, song_id, timestamp_seconds, comment_text)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, song_id)
+       DO UPDATE SET 
+         timestamp_seconds = EXCLUDED.timestamp_seconds,
+         comment_text = EXCLUDED.comment_text,
+         updated_at = CURRENT_TIMESTAMP;`,
+      [userId, songID, timestampSeconds, commentText]
+    );
+
+    return res.status(200).json({success: true});
+
+  } catch(err){
+    console.log("error inserting timestamp comment into database", err.message);
+    return res.status(500).json({
+      error: "Database error"
+    });
+  }
 });
 
 //can only access friends page if authenticated
