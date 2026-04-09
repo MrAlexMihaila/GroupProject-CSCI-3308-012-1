@@ -105,6 +105,7 @@ CREATE TABLE song_comments (
   song_id VARCHAR(50) NOT NULL,
   timestamp_seconds INT NOT NULL CHECK (timestamp_seconds >= 0),
   comment_text TEXT NOT NULL,
+  UNIQUE (user_id, song_id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,

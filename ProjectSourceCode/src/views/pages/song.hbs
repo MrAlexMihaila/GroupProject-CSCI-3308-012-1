@@ -1,4 +1,4 @@
-<div class="container-fluid" id="song-page" data-song-uri="{{songURI}}">
+<div class="container-fluid" id="song-page" data-song-uri="{{songURI}}" data-song-id="{{songID}}">
   <div class="row">
     <div class="col-md-3 bg-light vh-100 p-4 ms-5">
         {{#if albumImages.[0].url}}
@@ -64,16 +64,21 @@
                     <button id="play-btn" class="btn btn-primary btn-sm">Play</button>
                     <button id="pause-btn" class="btn btn-secondary btn-sm">Pause</button>
                     {{#if login}}
-                        {{#if userTimeStampComment}}
-                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_timestamp_modal">
-                                Edit Timestamp Comment
-                            </button>
+                        {{#if userLoggedIntoSpotify}}
+                            {{#if userTimeStampComment}}
+                                <button class="btn btn-primary mt-3 timestampCommentClass" data-bs-toggle="modal" id="timestampCommentID" data-bs-target="#add_timestamp_modal">
+                                    Edit Timestamp Comment
+                                </button>
+                            {{else}}
+                                <button class="btn btn-primary mt-3" data-bs-toggle="modal" id="timestampCommentID" data-bs-target="#add_timestamp_modal">
+                                    Add Timestamp Comment
+                                </button>
+                            {{/if}}
                         {{else}}
-                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_timestamp_modal">
-                                Add Timestamp Comment
+                            <button class="btn btn-primary mt-3" data-bs-toggle="modal">
+                                Please connect with Spotify to add a timestamp comment!
                             </button>
                         {{/if}}
-                        
                     {{else}}
                         <button class="btn btn-primary mt-3" data-bs-toggle="modal">
                             Please login to add a timestamp comment!
@@ -90,7 +95,17 @@
 
                 </div>
                 <h5>Timestamp Comments</h5>
-                <p>Insert Timestamp Comments here</p>
+                {{#if timestampComments.length}}
+                    {{#each timestampComments}}
+                        <div class="border p-2 mb-2">
+                            <strong>{{username}}</strong>
+                            <span class="ms-2">({{timestamp_seconds}})</span>
+                            <p>{{comment_text}}</p>
+                        </div>
+                    {{/each}}
+                {{else}}
+                    <p>No reviews yet.</p>
+                {{/if}}
             </div>
         </div>
     </div>

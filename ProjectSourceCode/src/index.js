@@ -186,6 +186,13 @@ app.use(
 app.use((req, res, next) => {
   //console.log("SESSION ON REQUEST:", req.session.user);
   res.locals.user = req.session.user || null;
+  //user logged into spotify
+  let userLoggedIntoSpotify = false;
+  if(req.session.spotifyAccessToken)
+  {
+    userLoggedIntoSpotify = true;
+  }
+  res.locals.userLoggedIntoSpotify = userLoggedIntoSpotify;
   next();
 });
 
@@ -506,7 +513,20 @@ app.get('/songs_tab/:id', async (req, res) => {
     );
 
     //search database for timestamp comments
-    const timestampComments = null;
+    const timestampComments = await db.any(
+      `SELECT sc.*, u.username 
+      FROM song_comments sc
+      JOIN users u ON sc.user_id = u.user_id
+      WHERE sc.song_id = $1
+      ORDER BY sc.timestamp_seconds ASC`,
+      [songID]
+    );
+
+    //convert the time into a string in order to get the correct timestamp position for the comment
+    const formattedComments = timestampComments.map(c => ({
+      ...c,
+      formattedTime: `${Math.floor(c.timestamp_seconds / 60)}:${(c.timestamp_seconds % 60).toString().padStart(2, '0')}`
+    }));
 
     //code to calculate rating number using database
     let songRating = 0; //out of 5 "stars"
@@ -533,10 +553,18 @@ app.get('/songs_tab/:id', async (req, res) => {
     {
       console.log("search for user timestamp review will be here");
     }
+
+    //user logged into spotify
+    let userLoggedIntoSpotify = false;
+    if(req.session.spotifyAccessToken)
+    {
+      userLoggedIntoSpotify = true;
+    }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
       time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: timestampComments, userReview: userReview, 
-      userTimestampComment: userTimestampComment, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null, isSongs: true 
+      userTimestampComment: userTimestampComment, songID: songID, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null,
+      userLoggedIntoSpotify: userLoggedIntoSpotify, isSongs: true 
     });
   })
   .catch(err => {
@@ -604,6 +632,64 @@ app.post('/addReview', auth, async (req, res) => {
     return res.status(200).json({ success: true });
   } catch(err){
     console.log("error inserting review into database", err.message);
+    return res.status(500).json({
+      error: "Database error"
+    });
+  }
+});
+
+app.post('/addTimestampComment', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+  const {songID, timestampSeconds, commentText} = req.body;
+
+  try{
+    //need to save locally first before we can add review
+    const token = await getSpotifyToken();
+    const response = await axios({
+      url: `https://api.spotify.com/v1/tracks/${songID}`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const track = response.data;
+    const title = track.name;
+    const duration = Math.floor(track.duration_ms / 1000);
+    const releaseDate = track.album.release_date;
+    const trackNumber = track.track_number;
+    const albumId = track.album.id;
+    const albumTitle = track.album.name;
+    const albumImage = track.album.images?.[0]?.url ?? null;
+
+    await db.none(
+      `INSERT INTO albums (album_id, title, release_date, image_url)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (album_id) DO NOTHING`,
+      [albumId, albumTitle, releaseDate, albumImage]
+    );
+
+    await db.none(
+      `INSERT INTO songs (song_id, title, album_id, duration, release_date, track_number)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (song_id) DO NOTHING`,
+      [songID, title, albumId, duration, releaseDate, trackNumber]
+    );
+
+    //finally attempt to insert timestamp comment into table
+    await db.none(
+      `INSERT INTO song_comments (user_id, song_id, timestamp_seconds, comment_text)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, song_id)
+       DO UPDATE SET 
+         timestamp_seconds = EXCLUDED.timestamp_seconds,
+         comment_text = EXCLUDED.comment_text,
+         updated_at = CURRENT_TIMESTAMP;`,
+      [userId, songID, timestampSeconds, commentText]
+    );
+
+    return res.status(200).json({success: true});
+
+  } catch(err){
+    console.log("error inserting timestamp comment into database", err.message);
     return res.status(500).json({
       error: "Database error"
     });

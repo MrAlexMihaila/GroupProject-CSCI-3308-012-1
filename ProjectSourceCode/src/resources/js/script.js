@@ -1,4 +1,5 @@
-let playerInstance = null
+let playerInstance = null;
+let playerTimestampPosition = 0;
 
 //converts a passed string into a rating number
 function convertRatingToInt(ratingLetter)
@@ -73,10 +74,41 @@ async function handleSubmit()
     return false;
 }
 
+function makeTimestampComment()
+{
+    return {
+        songID: document.getElementById("song-page").dataset.songId,
+        timestampSeconds: playerTimestampPosition,
+        commentText: document.getElementById("timestamp_comment").value,
+        createdAt: new Date()
+    }
+}
+
 //dummy function for now, will actually implement later
 async function addTimestampComment() 
 {
-    console.log("attempting to add timestamp comment!");
+    const comment = makeTimestampComment();
+    console.log(comment);
+
+    await fetch('/addTimestampComment', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(comment)
+    });
+
+    if(res.ok)
+    {
+        //probably do not want to reload since that would stop playback
+        window.location.reload();
+    }
+    else
+    {
+        alert("Something went wrong with your timestamp comment. Please try again.");
+    }
+
+    return false;
 }
 
 //spotify web playback sdk related code below
@@ -117,6 +149,20 @@ document.addEventListener("DOMContentLoaded", () => {
         playerInstance.seek(newPosition);
     });
 
+    document.getElementById("timestampCommentID").addEventListener("click", async (e) => {
+        if(!playerInstance)
+        {
+            return;
+        }
+
+        const state = await playerInstance.getCurrentState();
+        if(!state)
+        {
+            return;
+        }
+
+        playerTimestampPosition = state.position/1000;
+    })
 });
 
 //basically a timer that will update the time display of the player every 500 ms
