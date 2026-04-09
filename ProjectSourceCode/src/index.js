@@ -206,6 +206,11 @@ app.use(express.static(__dirname + '/')); //allow for anything in resources dire
 
 //basically everything above this line was taken from lab 7
 
+//lab 10 test function
+app.get('/welcome', (req, res) => {
+  res.json({status: 'success', message: 'Welcome!'});
+});
+
 //default, just redirect to home
 app.get('/', (req, res) => {
     res.redirect('/home');
@@ -245,6 +250,7 @@ app.post('/login', async (req, res) => {
 
     req.session.user = user;
     req.session.save();
+    
     res.redirect('/home'); //default, probably change
   } catch(err)
   {
@@ -259,18 +265,20 @@ app.get('/register', (req, res) => {
 
 //register post route
 app.post('/register', async (req, res) => {
-  //hash the password using bcrypt library
-  const hash = await bcrypt.hash(req.body.password, 10);
-
   try {
+    //hash the password using bcrypt library
+    const hash = await bcrypt.hash(req.body.password, 10);
+
     await db.none(
       `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [req.body.username, hash]
     );
 
+    //res.status(200).json({ message: 'Register Successful!' });
     res.redirect('/login');
   } catch(err)
   {
-    res.redirect('/register'); //redirect to page in case something goes wrong
+    //console.log("Database Error:", err.message || err);
+    res.status(400).json({ message: 'Failed to register!' });
   }
 });
 
@@ -701,6 +709,7 @@ app.get('/friends', auth, async (req, res) => {
   res.render('pages/friends', {isFriends: true});
 });
 
-//starting server, do not delete the next two lines
-app.listen(3000);
+//starting server, do not delete or modify the next two lines
+const server = app.listen(3000);
+module.exports = {server, db};
 console.log('Server is listening on port 3000');
