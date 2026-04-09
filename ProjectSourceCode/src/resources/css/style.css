@@ -16,11 +16,11 @@
   border-right: none;
 }
 
-.form-control {
+.navbar-form .form-control {
   border-left: none;
 }
 
-.form-control:focus {
+.navbar-form .form-control:focus {
   box-shadow: none;
   border-color: #ced4da;
 }
