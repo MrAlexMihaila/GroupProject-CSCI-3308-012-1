@@ -66,20 +66,10 @@
       {{#if user}}
         <div class="profile-card" style="position: relative;">
           <div id="profileMenu" style="display: none; position: absolute; bottom: 100%; left: 0; right: 0; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-bottom: 8px;">
-            {{#if userLoggedIntoSpotify}}
-              <a class="dropdown-item" roll="button">
-                <i class="bi bi-person"></i>Connected With Spotify
-              </a>
-            {{else}}
-              <a class="dropdown-item" href="/spotify-login" roll="button">
-                <i class="bi bi-person"></i>Connect With Spotify
-              </a>
-            {{/if}}
-            
-            <a href="/profile" class="dropdown-item">
+            <a href="/profile" class="dropdown-item" style="display: block; padding: 12px 15px; text-decoration: none; color: #333; border-bottom: 1px solid #dee2e6; cursor: pointer; font-size: 14px;">
               <i class="bi bi-person"></i> Profile
             </a>
-            <a href="/logout" class="dropdown-item dropdown-item-logout">
+            <a href="/logout" class="dropdown-item" style="display: block; padding: 12px 15px; text-decoration: none; color: #dc3545; cursor: pointer; font-size: 14px;">
               <i class="bi bi-box-arrow-right"></i> Logout
             </a>
           </div>
@@ -105,6 +95,25 @@
         </div>
       {{/if}}
     </header>
+
+    <style>
+      .profile-card button:hover {
+        background-color: rgba(0, 0, 0, 0.05) !important;
+        border-radius: 8px;
+      }
+      
+      .profile-menu .dropdown-item:hover {
+        background-color: #f8f9fa;
+      }
+      
+      .profile-menu .dropdown-item:last-child {
+        border-bottom: none;
+      }
+      
+      .profile-menu .dropdown-item i {
+        margin-right: 8px;
+      }
+    </style>
     
     <!-- JavaScript to handle profile menu toggle and outside click -->
     <script>
