@@ -401,14 +401,14 @@ app.get('/search', async (req, res) => {
     }
     else if (type === "artist") {
       results = response.data.artists.items;
-      res.render('pages/artists', {
+      res.render('pages/search_artist', {
         artist_list: results,
         isArtists: true
       });
     }
     else if (type === "album") {
       results = response.data.albums.items;
-      res.render('pages/albums', {
+      res.render('pages/search_album', {
         album_list: results,
         isAlbums: true
       });
@@ -424,7 +424,7 @@ app.get('/search', async (req, res) => {
   catch (err) {
     console.error(err.response?.data || err.message);
 
-    res.render('pages/songs_tab', {
+    res.render('pages/song', {
       song_list: [],
       isSongs: true,
       error: "Search Failed"
@@ -481,7 +481,30 @@ app.get('/artist/:id', async (req, res) => {
 
 
 app.get('/albums', async (req, res) => {
-  res.render('pages/albums', {isAlbums: true});
+  try {
+    const token = await getSpotifyToken();
+
+    const topAlbumsResponse = await axios({
+      url: "https://api.spotify.com/v1/search",
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: "top albums 2025", type: "album", limit: 50 }
+    });
+    const topAlbums = topAlbumsResponse.data.albums.items.filter(a => a !== null);
+
+    const popularAlbumsResponse = await axios({
+      url: "https://api.spotify.com/v1/search",
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: "popular albums", type: "album", limit: 50 }
+    });
+    const popularAlbums = popularAlbumsResponse.data.albums.items.filter(a => a !== null);
+
+    res.render('pages/albums', { topAlbums, popularAlbums, isAlbums: true });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.render('pages/albums', { topAlbums: [], popularAlbums: [], isAlbums: true });
+  }
 });
 /*it works, but it doesn't fetch the playlists like it should, Im just searching top hits 2025, or popular songs 2025 so theres some bad data*/ 
 app.get('/songs', async (req, res) => {
@@ -534,7 +557,7 @@ app.get('/logout', (req, res) => {
   });
 });
 
-app.get('/songs_tab/:id', async (req, res) => {
+app.get('/song/:id', async (req, res) => {
   const songID = req.params.id;
   //console.log(songID);
   getSpotifyToken()
