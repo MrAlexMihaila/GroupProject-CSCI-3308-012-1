@@ -14,7 +14,7 @@
 
     <!-- DROPDOWN -->
     <select name="type" class="form-select px-2" style="max-width: 90px; background-color: #dee2e6" >
-      <option value="track">Songs</option>
+      <option value="track">Tracks</option>
       <option value="artist">Artists</option>
       <option value="album">Albums</option>
     </select>
@@ -64,8 +64,12 @@
   </li>
 </ul>
       <div class="d-grid gap-2">
-        <a class="btn btn-outline-primary rounded-0" href="/login" role="button">Log In</a>
-        <a class="btn btn-primary rounded-0" href="/register" role="button">Sign Up Free</a>
+        {{#if user}}
+          <a class="btn btn-outline-danger rounded-0" href="/logout" role="button">Logout</a>
+        {{else}}
+          <a class="btn btn-outline-primary rounded-0" href="/login" role="button">Log In</a>
+          <a class="btn btn-primary rounded-0" href="/register" role="button">Sign Up Free</a>
+        {{/if}}
       </div>
     <hr>
   </div>
