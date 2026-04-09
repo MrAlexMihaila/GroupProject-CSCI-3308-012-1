@@ -195,20 +195,43 @@ app.get('/register', (req, res) => {
 
 //register post route
 app.post('/register', async (req, res) => {
+  const {username, password} = req.body;
+
+  // Fail fast for invalid usernames used in API tests and to avoid DB constraint hangs.
+  /*
+  if (!username || username.length > 50) {
+    return res.status(400).json({ message: 'Failed to register!' });
+  }
+  */
+
   try {
     //hash the password using bcrypt library
-    const hash = await bcrypt.hash(req.body.password, 10);
+    const hash = await bcrypt.hash(password, 10);
 
     await db.none(
-      `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [req.body.username, hash]
+      `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [username, hash]
     );
 
     //res.status(200).json({ message: 'Register Successful!' });
     res.redirect('/login');
-  } catch(err)
-  {
-    //console.log("Database Error:", err.message || err);
-    res.status(400).json({ message: 'Failed to register!' });
+  } catch(err) {
+
+    // check if user already exists, if so send to register page with message
+    try {
+      const existingUser = await db.oneOrNone(
+        `SELECT * FROM users WHERE username = $1`, [username]
+      );
+
+      if (existingUser) {
+        return res.render('pages/register', {message: 'Username already exists'});
+      }
+
+      // Any other registration error should still respond (prevents request timeouts).
+      return res.status(400).json({ message: 'Failed to register!'});
+    } catch(err) {
+      //console.log("Database Error:", err.message || err);
+      return res.status(400).json({ message: 'Failed to register!'});
+    }
   }
 });
 
