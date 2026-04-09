@@ -322,7 +322,7 @@ const auth = (req, res, next) => {
 };
 
 //can only access friends page if authenticated
-app.get('/friends', async (req, res) => {
+app.get('/friends', auth, async (req, res) => {
   const search = req.query.search ? req.query.search.trim() : '';
   const currentUserId = req.session.user?.user_id;
 
