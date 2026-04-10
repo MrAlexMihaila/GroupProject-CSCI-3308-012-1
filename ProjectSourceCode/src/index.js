@@ -547,22 +547,21 @@ app.get('/songs_tab/:id', async (req, res) => {
       ratingLetter = convertRatingToLetter(songRating);
     }
 
-    //find user review (to change review button to an edit button)
+    //find user review and timestamp comment (to change review/comment button to an edit button)
     let userReview = null;
+    let userTimestampComment = null;
     if(req.session.user) 
     {
       userReview = reviews.find(
         r => r.user_id === req.session.user.user_id
       );
+
+      userTimestampComment = formattedComments.find(
+        c => c.user_id === req.session.user.user_id
+      );
     }
 
-    let userTimestampComment = null;
-    if(req.session.user)
-    {
-      console.log("search for user timestamp review will be here");
-    }
-
-    //user logged into spotify
+    //user logged into spotify check
     let userLoggedIntoSpotify = false;
     if(req.session.spotifyAccessToken)
     {
@@ -570,7 +569,7 @@ app.get('/songs_tab/:id', async (req, res) => {
     }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
-      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: timestampComments, userReview: userReview, 
+      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: formattedComments, userReview: userReview, 
       userTimestampComment: userTimestampComment, songID: songID, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null,
       userLoggedIntoSpotify: userLoggedIntoSpotify, isSongs: true 
     });

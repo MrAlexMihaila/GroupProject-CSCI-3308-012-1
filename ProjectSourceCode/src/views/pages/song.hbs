@@ -65,7 +65,7 @@
                     <button id="pause-btn" class="btn btn-secondary btn-sm">Pause</button>
                     {{#if login}}
                         {{#if userLoggedIntoSpotify}}
-                            {{#if userTimeStampComment}}
+                            {{#if userTimestampComment}}
                                 <button class="btn btn-primary mt-3 timestampCommentClass" data-bs-toggle="modal" id="timestampCommentID" data-bs-target="#add_timestamp_modal">
                                     Edit Timestamp Comment
                                 </button>
@@ -99,12 +99,16 @@
                     {{#each timestampComments}}
                         <div class="border p-2 mb-2">
                             <strong>{{username}}</strong>
-                            <span class="ms-2">({{timestamp_seconds}})</span>
-                            <p>{{comment_text}}</p>
+                            <span class="ms-2">
+                                <a href="#" class="timestamp-link" data-seconds="{{timestamp_seconds}}">
+                                    ({{formattedTime}})
+                                </a>
+                            </span>
+                            <p class="mb-0">{{comment_text}}</p>
                         </div>
                     {{/each}}
                 {{else}}
-                    <p>No reviews yet.</p>
+                    <p>No comments yet.</p>
                 {{/if}}
             </div>
         </div>
@@ -167,34 +171,26 @@
 <div class="modal" tabindex="-1" id="add_timestamp_modal">
     <div class="modal-dialog">
         <div class="modal-content">
-
             <div class="modal-header">
-                <h5 class="modal-title">Add Timestamp Comment</h5>
+                <h5 class="modal-title">Timestamp Comment</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-
             <div class="modal-body">
                 <form onsubmit="return addTimestampComment();">
-
                     <div class="mb-3">
                         <label class="form-label">Timestamp</label>
                         <input type="text" id="timestamp_display" class="form-control" readonly>
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label">Comment</label>
-                        <input type="text" id="timestamp_comment" class="form-control">
+                        <input type="text" id="timestamp_comment" class="form-control" 
+                               value="{{#if userTimestampComment}}{{userTimestampComment.comment_text}}{{/if}}"
+                               placeholder="What's happening at this time?">
                     </div>
-
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            Close
-                        </button>
-                        <button class="btn btn-primary" type="submit">
-                            Save Comment
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button class="btn btn-primary" type="submit">Save Comment</button>
                     </div>
-
                 </form>
             </div>
         </div>

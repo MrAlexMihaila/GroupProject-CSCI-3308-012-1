@@ -35,6 +35,14 @@ function convertRatingToInt(ratingLetter)
     }
 }
 
+//format the time into the proper format
+function formatTime(seconds)
+{
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 //get all the information from the review modal, except for song id and user info
 function makeReview() 
 {
@@ -53,7 +61,7 @@ async function handleSubmit()
 {
     const review = makeReview();
 
-    await fetch('/addReview', {
+    const res = await fetch('/addReview', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -84,30 +92,51 @@ function makeTimestampComment()
     }
 }
 
-//dummy function for now, will actually implement later
+//logic for adding timestamp comment to server
 async function addTimestampComment() 
 {
     const comment = makeTimestampComment();
-    console.log(comment);
+    //console.log(comment);
 
-    await fetch('/addTimestampComment', {
+    const res = await fetch('/addTimestampComment', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(comment)
     });
 
-    if(res.ok)
+    if(res.ok) 
     {
-        //probably do not want to reload since that would stop playback
-        window.location.reload();
-    }
-    else
-    {
-        alert("Something went wrong with your timestamp comment. Please try again.");
-    }
+        const modal = bootstrap.Modal.getInstance(document.getElementById('add_timestamp_modal'));
+        modal.hide();
 
+        const container = document.querySelector('.col-md-6:last-child');
+        const timeStr = document.getElementById('timestamp_display').value;
+        const textStr = document.getElementById('timestamp_comment').value;
+
+        const newCommentHTML = `
+            <div class="border p-2 mb-2">
+                <strong>You</strong>
+                <span class="ms-2">
+                    <a href="#" class="timestamp-link" data-seconds="${comment.timestamp_seconds}">
+                        (${timeStr})
+                    </a>
+                </span>
+                <p class="mb-0">${textStr}</p>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', newCommentHTML);
+
+        const btn = document.getElementById("timestampCommentID");
+        if(btn)
+        {
+            btn.innerText = "Edit Timestamp Comment";
+        }
+    }
+    else 
+    {
+        alert("Save failed.");
+    }
     return false;
 }
 
@@ -162,7 +191,25 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         playerTimestampPosition = state.position/1000;
-    })
+        const displayField = document.getElementById("timestamp_display");
+        if(displayField)
+        {
+            displayField.value = formatTime(playerTimestampPosition);
+        }
+    });
+
+    //make it to where clicking all timestamp comments move the player
+    //to the timestamp position
+    document.querySelectorAll('.timestamp-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const seconds = parseFloat(e.target.dataset.seconds);
+            if(playerInstance && !isNaN(seconds))
+            {
+                playerInstance.seek(seconds * 1000);
+            }
+        });
+    });
 });
 
 //basically a timer that will update the time display of the player every 500 ms
