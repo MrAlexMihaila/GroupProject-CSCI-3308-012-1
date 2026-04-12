@@ -140,9 +140,13 @@ function convertRatingToLetter(rating)
     {
       return "D";
     }
-    else
+    else if(rating >= 0.5)
     {
       return "E";
+    }
+    else
+    {
+      return "F";
     }
 }
 
@@ -512,11 +516,15 @@ app.get('/songs_tab/:id', async (req, res) => {
     let loggedIn = !!req.session.user;
 
     const reviews = await db.any(
-      `SELECT r.*, u.username
-       FROM reviews r
-       JOIN users u ON r.user_id = u.user_id
-       WHERE r.song_id = $1
-       ORDER BY r.created_at DESC`,
+      `SELECT r.*, u.username,
+      COALESCE(SUM(CASE WHEN rr.reaction = 1 THEN 1 ELSE 0 END), 0) AS likes,
+      COALESCE(SUM(CASE WHEN rr.reaction = -1 THEN 1 ELSE 0 END), 0) AS dislikes
+      FROM reviews r
+      JOIN users u ON r.user_id = u.user_id
+      LEFT JOIN review_reactions rr ON rr.review_id = r.review_id
+      WHERE r.song_id = $1
+      GROUP BY r.review_id, u.username
+      ORDER BY r.created_at DESC;`,
       [songID]
     );
 
@@ -547,32 +555,46 @@ app.get('/songs_tab/:id', async (req, res) => {
       ratingLetter = convertRatingToLetter(songRating);
     }
 
-    //find user review (to change review button to an edit button)
+    //find user review and timestamp comment (to change review/comment button to an edit button)
     let userReview = null;
+    let userTimestampComment = null;
     if(req.session.user) 
     {
       userReview = reviews.find(
         r => r.user_id === req.session.user.user_id
       );
+
+      userTimestampComment = formattedComments.find(
+        c => c.user_id === req.session.user.user_id
+      );
     }
 
-    let userTimestampComment = null;
-    if(req.session.user)
-    {
-      console.log("search for user timestamp review will be here");
-    }
-
-    //user logged into spotify
+    //user logged into spotify and premium check
     let userLoggedIntoSpotify = false;
+    let spotifyPremium = false;
     if(req.session.spotifyAccessToken)
     {
       userLoggedIntoSpotify = true;
+      try 
+      {
+        const me = await axios({
+          url: "https://api.spotify.com/v1/me",
+          headers: {
+            Authorization: `Bearer ${req.session.spotifyAccessToken}`
+          }
+        });
+
+        spotifyPremium = me.data.product === "premium";
+      }
+      catch(err){
+        console.log("Spotify /me check failed:", err.message);
+      }
     }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
-      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: timestampComments, userReview: userReview, 
+      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: formattedComments, userReview: userReview, 
       userTimestampComment: userTimestampComment, songID: songID, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null,
-      userLoggedIntoSpotify: userLoggedIntoSpotify, isSongs: true 
+      userLoggedIntoSpotify: userLoggedIntoSpotify, spotifyPremium: spotifyPremium, isSongs: true 
     });
   })
   .catch(err => {
@@ -701,6 +723,25 @@ app.post('/addTimestampComment', auth, async (req, res) => {
     return res.status(500).json({
       error: "Database error"
     });
+  }
+});
+
+app.post('/reviewReact', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+  const {reviewId, reaction} = req.body;
+
+  try{
+    await db.none(`
+      INSERT INTO review_reactions (user_id, review_id, reaction)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id, review_id)
+      DO UPDATE SET reaction = EXCLUDED.reaction
+    `, [userId, reviewId, reaction]);
+
+    res.json({ success: true });
+  }catch (err){
+    console.error(err);
+    res.status(500).json({ error: "Failed to react to review" });
   }
 });
 
