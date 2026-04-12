@@ -1,5 +1,6 @@
 let playerInstance = null;
 let playerTimestampPosition = 0;
+let isPlaying = false;
 
 //converts a passed string into a rating number
 function convertRatingToInt(ratingLetter)
@@ -96,7 +97,6 @@ function makeTimestampComment()
 async function addTimestampComment() 
 {
     const comment = makeTimestampComment();
-    //console.log(comment);
 
     const res = await fetch('/addTimestampComment', {
         method: 'POST',
@@ -106,37 +106,13 @@ async function addTimestampComment()
 
     if(res.ok) 
     {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('add_timestamp_modal'));
-        modal.hide();
-
-        const container = document.querySelector('.col-md-6:last-child');
-        const timeStr = document.getElementById('timestamp_display').value;
-        const textStr = document.getElementById('timestamp_comment').value;
-
-        const newCommentHTML = `
-            <div class="border p-2 mb-2">
-                <strong>You</strong>
-                <span class="ms-2">
-                    <a href="#" class="timestamp-link" data-seconds="${comment.timestamp_seconds}">
-                        (${timeStr})
-                    </a>
-                </span>
-                <p class="mb-0">${textStr}</p>
-            </div>
-        `;
-
-        container.insertAdjacentHTML('beforeend', newCommentHTML);
-
-        const btn = document.getElementById("timestampCommentID");
-        if(btn)
-        {
-            btn.innerText = "Edit Timestamp Comment";
-        }
+        window.location.reload();
     }
     else 
     {
         alert("Save failed.");
     }
+
     return false;
 }
 
@@ -146,19 +122,29 @@ function setPlayerInstance(player)
     playerInstance = player;
 }
 
+
+
+document.getElementById("play-toggle")?.addEventListener("click", async () => {
+    if(!playerInstance)
+    {
+        return;
+    }
+    if(isPlaying)
+    {
+        await playerInstance.pause();
+        isPlaying = false;
+        document.getElementById("play-toggle").textContent = "▶";
+    } 
+    else
+    {
+        await playerInstance.resume();
+        isPlaying = true;
+        document.getElementById("play-toggle").textContent = "⏸";
+    }
+});
+
 //basically, when page is fully loaded...
 document.addEventListener("DOMContentLoaded", () => {
-
-    //connect the buttons so they do the things they are
-    //supposed to do (play button resuming playback, pause pausing, etc.)
-    document.getElementById("play-btn")?.addEventListener("click", () => {
-        playerInstance?.resume();
-    });
-
-    document.getElementById("pause-btn")?.addEventListener("click", () => {
-        playerInstance?.pause();
-    });
-
     //update the position of the seek bar
     document.getElementById("seek-bar")?.addEventListener("input", async (e) => {
         if(!playerInstance)

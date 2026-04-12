@@ -140,9 +140,13 @@ function convertRatingToLetter(rating)
     {
       return "D";
     }
-    else
+    else if(rating >= 0.5)
     {
       return "E";
+    }
+    else
+    {
+      return "F";
     }
 }
 
@@ -561,17 +565,32 @@ app.get('/songs_tab/:id', async (req, res) => {
       );
     }
 
-    //user logged into spotify check
+    //user logged into spotify and premium check
     let userLoggedIntoSpotify = false;
+    let spotifyPremium = false;
     if(req.session.spotifyAccessToken)
     {
       userLoggedIntoSpotify = true;
+      try 
+      {
+        const me = await axios({
+          url: "https://api.spotify.com/v1/me",
+          headers: {
+            Authorization: `Bearer ${req.session.spotifyAccessToken}`
+          }
+        });
+
+        spotifyPremium = me.data.product === "premium";
+      }
+      catch(err){
+        console.log("Spotify /me check failed:", err.message);
+      }
     }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
       time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: formattedComments, userReview: userReview, 
       userTimestampComment: userTimestampComment, songID: songID, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null,
-      userLoggedIntoSpotify: userLoggedIntoSpotify, isSongs: true 
+      userLoggedIntoSpotify: userLoggedIntoSpotify, spotifyPremium: spotifyPremium, isSongs: true 
     });
   })
   .catch(err => {
