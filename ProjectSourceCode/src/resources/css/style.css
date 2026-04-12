@@ -146,3 +146,6 @@
   .row-3 .col-2-4:nth-child(n+31):nth-child(-n+45) {
     display: block;
   }
+.row-scroll > a {
+  flex: 0 0 auto;
+}
