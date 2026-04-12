@@ -46,9 +46,21 @@
                 {{#if reviews.length}}
                     {{#each reviews}}
                         <div class="border p-2 mb-2">
-                            <strong>{{username}}</strong>
-                            <span class="ms-2">({{gradeFromRating rating}})</span>
-                            <p>{{review_text}}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{username}}</strong>
+                                    <span class="ms-2">({{gradeFromRating rating}})</span>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-success like-btn" data-review-id="{{review_id}}">
+                                        👍 {{likes}}
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger dislike-btn" data-review-id="{{review_id}}">
+                                        👎 {{dislikes}}
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="mt-2 mb-0">{{review_text}}</p>
                         </div>
                     {{/each}}
                 {{else}}

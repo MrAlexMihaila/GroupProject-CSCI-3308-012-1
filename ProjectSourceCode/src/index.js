@@ -516,11 +516,15 @@ app.get('/songs_tab/:id', async (req, res) => {
     let loggedIn = !!req.session.user;
 
     const reviews = await db.any(
-      `SELECT r.*, u.username
-       FROM reviews r
-       JOIN users u ON r.user_id = u.user_id
-       WHERE r.song_id = $1
-       ORDER BY r.created_at DESC`,
+      `SELECT r.*, u.username,
+      COALESCE(SUM(CASE WHEN rr.reaction = 1 THEN 1 ELSE 0 END), 0) AS likes,
+      COALESCE(SUM(CASE WHEN rr.reaction = -1 THEN 1 ELSE 0 END), 0) AS dislikes
+      FROM reviews r
+      JOIN users u ON r.user_id = u.user_id
+      LEFT JOIN review_reactions rr ON rr.review_id = r.review_id
+      WHERE r.song_id = $1
+      GROUP BY r.review_id, u.username
+      ORDER BY r.created_at DESC;`,
       [songID]
     );
 
@@ -719,6 +723,25 @@ app.post('/addTimestampComment', auth, async (req, res) => {
     return res.status(500).json({
       error: "Database error"
     });
+  }
+});
+
+app.post('/reviewReact', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+  const {reviewId, reaction} = req.body;
+
+  try{
+    await db.none(`
+      INSERT INTO review_reactions (user_id, review_id, reaction)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id, review_id)
+      DO UPDATE SET reaction = EXCLUDED.reaction
+    `, [userId, reviewId, reaction]);
+
+    res.json({ success: true });
+  }catch (err){
+    console.error(err);
+    res.status(500).json({ error: "Failed to react to review" });
   }
 });
 

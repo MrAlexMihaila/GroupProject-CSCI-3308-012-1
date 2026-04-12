@@ -116,13 +116,40 @@ async function addTimestampComment()
     return false;
 }
 
+//send like/dislike to backend system
+async function sendReviewReaction(reviewId, reaction)
+{
+    try
+    {
+        const res = await fetch('/reviewReact', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reviewId,
+                reaction
+            })
+        });
+
+        if(!res.ok)
+        {
+            throw new Error("Reaction failed");
+        }
+
+        window.location.reload();
+    }
+    catch(err)
+    {
+        console.error(err);
+    }
+}
+
 //spotify web playback sdk related code below
 function setPlayerInstance(player)
 {
     playerInstance = player;
 }
-
-
 
 document.getElementById("play-toggle")?.addEventListener("click", async () => {
     if(!playerInstance)
@@ -197,6 +224,31 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 });
+
+//basically bind all the like/dislike buttons so logic works
+const bindReactionButtons = () => {
+    const likeBtns = document.querySelectorAll(".like-btn");
+    const dislikeBtns = document.querySelectorAll(".dislike-btn");
+
+    if(likeBtns.length === 0 && dislikeBtns.length === 0)
+    {
+        return setTimeout(bindReactionButtons, 0);
+    }
+
+    likeBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            sendReviewReaction(btn.dataset.reviewId, 1);
+        });
+    });
+
+    dislikeBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            sendReviewReaction(btn.dataset.reviewId, -1);
+        });
+    });
+};
+
+bindReactionButtons();
 
 //basically a timer that will update the time display of the player every 500 ms
 //probably should optimize it later but oh well
