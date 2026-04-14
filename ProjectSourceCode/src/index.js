@@ -397,12 +397,13 @@ app.get('/spotify-callback', async (req, res) => {
   }
 });
 
+
 app.get('/search', async (req, res) => {
   console.log("TYPE FROM FRONTEND:", req.query.type);
   const query = req.query.song;
   let type = req.query.type || "track"; // defaults to song
   
-  const validTypes = ["track", "artist", "album"];
+  const validTypes = ["track", "artist", "album", "users"];
   if (!validTypes.includes(type)) {
     type = "track"; // defaults to track
   }
@@ -411,15 +412,27 @@ app.get('/search', async (req, res) => {
     return res.redirect('/home');
   }
 
+  // handle users separately — no Spotify needed
+  if (type === "users") {
+    try {
+      const users = await db.any(
+        'SELECT user_id, username FROM users WHERE username ILIKE $1 LIMIT 25',
+        [`%${query}%`]
+      );
+      return res.render('pages/search_users', { user_list: users, isUsers: true });
+    } catch (err) {
+      console.error(err.message);
+      return res.render('pages/search_users', { user_list: [], isUsers: true });
+    }
+  }
+
   try {
     // get a valid api token
     const token = await getSpotifyToken();
     
     const response = await axios({
-
       url: "https://api.spotify.com/v1/search",
       method: "GET",
-
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -455,17 +468,15 @@ app.get('/search', async (req, res) => {
         isAlbums: true
       });
     }
+
     console.log("Search query:", query);
     console.log("Search type:", type);
     console.log("Number of results:", results.length);
     console.log("First result:", results[0]);
   }
   
-
-  
   catch (err) {
     console.error(err.response?.data || err.message);
-
     res.render('pages/song', {
       song_list: [],
       isSongs: true,
@@ -553,7 +564,7 @@ app.get('/songs', async (req, res) => {
   try {
     const token = await getSpotifyToken();
 
-    let USATop50PlaylistID = "3DLP1u57jcYremGNWw9Gfn"; //playlist id for a custom playlist i made with the current top 50 songs in the usa
+    //let USATop50PlaylistID = "3DLP1u57jcYremGNWw9Gfn"; //playlist id for a custom playlist i made with the current top 50 songs in the usa
 
     const topChartsResponse = await axios({
       url: "https://api.spotify.com/v1/search",
