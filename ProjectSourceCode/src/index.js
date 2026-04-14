@@ -936,6 +936,62 @@ app.post('/addAlbumReview', auth, async (req, res) => {
   }
 });
 
+app.post('/addAlbumReview', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+  const { rating, description, albumID } = req.body;
+
+  if (rating < 0 || rating > 5) {
+    console.log("invalid rating?");
+    console.log(rating);
+    return res.status(400).json({
+      error: "Invalid Rating Sent"
+    });
+  }
+
+  try {
+    // fetch album from Spotify
+    const token = await getSpotifyToken();
+    const response = await axios({
+      url: `https://api.spotify.com/v1/albums/${albumID}`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const album = response.data;
+    const title = album.name;
+    const releaseDate = album.release_date;
+    const image = album.images?.[0]?.url ?? null;
+
+    // insert album to sql table
+    await db.none(
+      `INSERT INTO albums (album_id, title, release_date, image_url)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (album_id) DO NOTHING`,
+      [albumID, title, releaseDate, image]
+    );
+
+    // insert/update review
+    await db.none(
+      `INSERT INTO reviews (user_id, album_id, rating, review_text)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, album_id)
+       DO UPDATE SET 
+         rating = EXCLUDED.rating,
+         review_text = EXCLUDED.review_text,
+         updated_at = CURRENT_TIMESTAMP;`,
+      [userId, albumID, rating, description]
+    );
+
+    return res.status(200).json({ success: true });
+
+  } catch (err) {
+    console.log("error inserting album review into database", err.message);
+    return res.status(500).json({
+      error: "Database error"
+    });
+  }
+});
+
 app.post('/addTimestampComment', auth, async (req, res) => {
   const userId = req.session.user.user_id;
   const {songID, timestampSeconds, commentText} = req.body;
