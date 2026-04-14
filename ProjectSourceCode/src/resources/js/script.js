@@ -285,24 +285,3 @@ function toggleProfileMenu() {
         }
     }
 });
-
-// helper function to get recent reviews
-async function getRecentReviews(userid, limit = 5) {
-  try {
-    const reviews = await db.any(
-      `SELECT r.review_id, r.rating, r.review_text, r.song_id, r.created_at, u.username,
-              COALESCE(s.title, 'Unknown Song') AS song_title
-        FROM reviews r
-        JOIN users u ON r.user_id = u.user_id
-        LEFT JOIN songs s ON r.song_id = s.song_id
-        WHERE r.user_id = $1
-        ORDER BY r.created_at DESC
-        LIMIT $2`,
-      [userid, limit]
-    );
-    return reviews;
-  } catch (err) {
-    console.error('Error fetching recent reviews:', err);
-    return [];
-  }
-}

@@ -155,6 +155,28 @@ function convertRatingToLetter(rating)
     }
 }
 
+// helper function to get recent reviews
+async function getRecentReviews(userid, limit = 5) {
+  try {
+    const reviews = await db.any(
+      `SELECT r.review_id, r.rating, r.review_text, r.song_id, r.created_at, u.username,
+              s.song_id, COALESCE(s.title, 'Unknown Song') AS song_title, a.image_url
+        FROM reviews r
+        JOIN users u ON r.user_id = u.user_id
+        LEFT JOIN songs s ON r.song_id = s.song_id
+        LEFT JOIN albums a ON s.album_id = a.album_id
+        WHERE r.user_id = $1
+        ORDER BY r.created_at DESC
+        LIMIT $2`,
+      [userid, limit]
+    );
+    return reviews;
+  } catch (err) {
+    console.error('Error fetching recent reviews:', err);
+    return [];
+  }
+}
+
 // database configuration
 const dbConfig = {
   host: 'db', // the database server
@@ -575,6 +597,7 @@ const auth = (req, res, next) => {
 // User profile route
 app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
+  console.log(reviews);
   res.render('pages/profile', {
     user: req.session.user,
     profileUser: req.session.user,
