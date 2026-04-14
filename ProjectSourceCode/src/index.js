@@ -598,6 +598,7 @@ app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
   res.render('pages/profile', {
     user: req.session.user,
+    profileUser: req.session.user,
     isOwnProfile: true,
     reviews
   });
@@ -610,8 +611,9 @@ app.get('/profile/:userid', async (req, res) => {
   const userId = Number.parseInt(req.params.userid, 10);
   if (!Number.isInteger(userId) || userId <= 0) {
     return res.status(400).render('pages/profile', {
+      user: req.session.user,
       message: 'Invalid user id.',
-      user: null,
+      profileUser: null,
       isOwnProfile: false,
       reviews: []
     });
@@ -624,28 +626,39 @@ app.get('/profile/:userid', async (req, res) => {
       [userId]
     );
 
+    console.log("profileUser:", profileUser);
+
+    // user not found
     if (!profileUser) {
       return res.status(404).render('pages/profile', {
+        user: req.session.user,
         message: 'User not found.',
-        user: null,
+        profileUser: null,
         isOwnProfile: false,
         reviews: []
       });
     }
 
-    // check if the it is the logged in users profile
+    // check if the it is the logged in users profile and redirect to /profile
     const isOwnProfile =
       req.session.user && req.session.user.user_id === profileUser.user_id;
-    
+    if (isOwnProfile) {
+      return res.redirect('/profile');
+    }
+
     const reviews = await getRecentReviews(profileUser.user_id);
 
+    console.log(reviews);
+
     return res.render('pages/profile', {
-      profileUser,
-      isOwnProfile,
-      reviews
+        user: req.session.user,
+        profileUser: profileUser,
+        isOwnProfile: false,
+        reviews: reviews
     });
   } catch (err) {
     return res.status(500).render('pages/profile', {
+      user: req.session.user,
       message: 'Something went wrong loading this profile.',
       profileUser: null,
       isOwnProfile: false,
