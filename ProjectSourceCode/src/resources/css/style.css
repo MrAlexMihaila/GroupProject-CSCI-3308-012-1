@@ -119,18 +119,27 @@
   transform: translateY(-6px);
   box-shadow: 0 12px 25px rgba(0,0,0,0.15);
 }
-/* for the row scroll*/
-.row-scroll {
-    display: flex;
-    gap: 1rem;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-    -webkit-overflow-scrolling: touch;
-  }
 
-  .row-scroll .col-2-4 {
-    flex: 0 0 auto;
-  }
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* for the row scroll */
+.row-scroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+.row-scroll .col-2-4 {
+  flex: 0 0 auto;
+}
 
   .row-1 .col-2-4:nth-child(n+16),
   .row-2 .col-2-4:nth-child(-n+15),

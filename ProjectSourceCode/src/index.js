@@ -516,15 +516,26 @@ app.get('/genres', async (req, res) => {
     const songsArrays = await Promise.all(songsPromises);
     const songs = songsArrays.flat();
 
-    // Remove duplicates if any
-    const uniqueSongs = songs.filter((song, index, self) =>
-      index === self.findIndex(s => s.id === song.id)
-    );
+    // Remove duplicates and choose the top 10 songs by popularity
+    const uniqueSongs = songs
+      .filter((song, index, self) => index === self.findIndex(s => s.id === song.id))
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+      .slice(0, 10);
 
-    res.render('pages/genres', { isGenres: true, search, songs: uniqueSongs });
+    res.render('pages/genres', {
+      isGenres: true,
+      search,
+      artists,
+      songs: uniqueSongs,
+    });
   } catch (err) {
     console.error('Error fetching genres:', err.response?.data || err.message);
-    res.render('pages/genres', { isGenres: true, search, songs: [] });
+    res.render('pages/genres', {
+      isGenres: true,
+      search,
+      artists: [],
+      songs: [],
+    });
   }
 });
 

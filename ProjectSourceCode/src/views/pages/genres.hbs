@@ -14,17 +14,39 @@
     </form>
   </div>
 
-  {{#if songs}}
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
-      {{#each songs}}
-        <div class="col">
-          {{> song_card}}
+  {{#if search}}
+    {{#if artists}}
+      <div class="mb-4">
+        <h3 class="mb-2 position-sticky" style="top:0; background:#fff; z-index:1;">Top Artists in {{search}}</h3>
+        <div class="row-scroll row-1">
+          {{#each artists}}
+            <div class="col-2-4">
+              {{> artist_card}}
+            </div>
+          {{/each}}
         </div>
-      {{/each}}
-    </div>
-  {{else if search}}
-    <div class="alert alert-info">No songs found for the genre "{{search}}".</div>
+      </div>
+    {{/if}}
+
+    {{#if songs}}
+      <div class="mb-4">
+        <h3 class="mb-2 position-sticky" style="top:0; background:#fff; z-index:1;">Top Songs in {{search}}</h3>
+        <div class="row-scroll row-1">
+          {{#each songs}}
+            <div class="col-2-4">
+              {{> song_card}}
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    {{/if}}
+
+    {{#unless artists}}
+      {{#unless songs}}
+        <div class="alert alert-info">No artists or songs found for the genre "{{search}}".</div>
+      {{/unless}}
+    {{/unless}}
   {{else}}
-    <div class="alert alert-info">Search for a genre to discover songs.</div>
+    <div class="alert alert-info">Search for a genre to discover artists and songs.</div>
   {{/if}}
 </div>
