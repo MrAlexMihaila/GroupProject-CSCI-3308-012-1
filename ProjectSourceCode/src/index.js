@@ -538,7 +538,7 @@ app.get('/albums', async (req, res) => {
       url: "https://api.spotify.com/v1/search",
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
-      params: { q: "popular albums", type: "album", limit: 50 }
+      params: { q: "Greatest hits", type: "album", limit: 50 }
     });
     const popularAlbums = popularAlbumsResponse.data.albums.items.filter(a => a !== null);
 
