@@ -146,3 +146,30 @@
   .row-3 .col-2-4:nth-child(n+31):nth-child(-n+45) {
     display: block;
   }
+
+/* for profile dropdown */
+.profile-card button:hover {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    border-radius: 8px;
+  }
+  #profileMenu .dropdown-item {
+    display: block;
+    padding: 12px 15px;
+    text-decoration: none;
+    color: #333;
+    border-bottom: 1px solid #dee2e6;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #profileMenu .dropdown-item:hover {
+    background-color: #f8f9fa;
+  }
+  #profileMenu .dropdown-item:last-child {
+    border-bottom: none;
+  }
+  #profileMenu .dropdown-item i {
+    margin-right: 8px;
+  }
+  #profileMenu .dropdown-item-logout {
+    color: #dc3545;
+  }
