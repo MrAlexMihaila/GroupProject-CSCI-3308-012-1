@@ -215,6 +215,27 @@ app.use(express.static(__dirname + '/')); //allow for anything in resources dire
 
 //basically everything above this line was taken from lab 7
 
+// helper function to get recent reviews
+async function getRecentReviews(userid, limit = 5) {
+  try {
+    const reviews = await db.any(
+      `SELECT r.review_id, r.rating, r.review_text, r.song_id, r.created_at, u.username,
+              COALESCE(s.title, 'Unknown Song') AS song_title
+        FROM reviews r
+        JOIN users u ON r.user_id = u.user_id
+        LEFT JOIN songs s ON r.song_id = s.song_id
+        WHERE r.user_id = $1
+        ORDER BY r.created_at DESC
+        LIMIT $2`,
+      [userid, limit]
+    );
+    return reviews;
+  } catch (err) {
+    console.error('Error fetching recent reviews:', err);
+    return [];
+  }
+}
+
 //lab 10 test function
 app.get('/welcome', (req, res) => {
   res.json({status: 'success', message: 'Welcome!'});
@@ -274,20 +295,41 @@ app.get('/register', (req, res) => {
 
 //register post route
 app.post('/register', async (req, res) => {
+  const {username, password} = req.body;
+
+  // Fail fast for invalid usernames used in API tests and to avoid DB constraint hangs.
+  if (!username || username.length > 50) {
+    return res.status(400).json({ message: 'Failed to register!' });
+  }
+
   try {
     //hash the password using bcrypt library
-    const hash = await bcrypt.hash(req.body.password, 10);
+    const hash = await bcrypt.hash(password, 10);
 
     await db.none(
-      `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [req.body.username, hash]
+      `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [username, hash]
     );
 
     //res.status(200).json({ message: 'Register Successful!' });
     res.redirect('/login');
-  } catch(err)
-  {
-    //console.log("Database Error:", err.message || err);
-    res.status(400).json({ message: 'Failed to register!' });
+  } catch(err) {
+
+    // check if user already exists, if so send to register page with message
+    try {
+      const existingUser = await db.oneOrNone(
+        `SELECT * FROM users WHERE username = $1`, [username]
+      );
+
+      if (existingUser) {
+        return res.render('pages/register', {message: 'Username already exists'});
+      }
+
+      // Any other registration error should still respond (prevents request timeouts).
+      return res.status(400).json({ message: 'Failed to register!'});
+    } catch(err) {
+      //console.log("Database Error:", err.message || err);
+      return res.status(400).json({ message: 'Failed to register!'});
+    }
   }
 });
 
@@ -550,6 +592,66 @@ const auth = (req, res, next) => {
   }
   next();
 };
+
+// User profile route
+app.get('/profile', auth, async (req, res) => {
+  const reviews = await getRecentReviews(req.session.user.user_id);
+  res.render('pages/profile', {
+    user: req.session.user,
+    isOwnProfile: true,
+    reviews
+  });
+});
+
+// Public profile route
+app.get('/profile/:userid', async (req, res) => {
+  
+  // convert user id to integer and check if valid
+  const userId = Number.parseInt(req.params.userid, 10);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).render('pages/profile', {
+      message: 'Invalid user id.',
+      user: null,
+      isOwnProfile: false,
+      reviews: []
+    });
+  }
+
+  try {
+    // query user id from database
+    const profileUser = await db.oneOrNone(
+      'SELECT user_id, username FROM users WHERE user_id = $1',
+      [userId]
+    );
+
+    if (!profileUser) {
+      return res.status(404).render('pages/profile', {
+        message: 'User not found.',
+        user: null,
+        isOwnProfile: false,
+        reviews: []
+      });
+    }
+
+    // check if the it is the logged in users profile
+    const isOwnProfile =
+      req.session.user && req.session.user.user_id === profileUser.user_id;
+    
+    const reviews = await getRecentReviews(profileUser.user_id);
+
+    return res.render('pages/profile', {
+      profileUser,
+      isOwnProfile,
+      reviews
+    });
+  } catch (err) {
+    return res.status(500).render('pages/profile', {
+      message: 'Something went wrong loading this profile.',
+      profileUser: null,
+      isOwnProfile: false,
+    });
+  }
+});
 
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {

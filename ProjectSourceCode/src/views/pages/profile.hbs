@@ -1,0 +1,52 @@
+<div class="container profile-layout mt-4 mb-4">
+  <h1 class="mb-4">Profile</h1>
+
+  {{#if message}}
+    <div class="alert alert-warning" role="alert">{{message}}</div>
+  {{/if}}
+
+  <div class="row g-4 align-items-start">
+    <div class="col-12 col-lg-4">
+      <div class="card profile-user-card">
+        <div class="card-body text-center">
+          <img
+            src="/resources/img/default-profile.png"
+            alt="Profile Picture"
+            class="rounded-circle mb-3 profile-avatar"
+          >
+          <h3 class="mb-1">{{#if user}}{{user.username}}{{else}}Unknown User{{/if}}</h3>
+          {{#if isOwnProfile}}
+            <p class="text-muted mb-0">This is your profile.</p>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+      <div class="card profile-reviews-card">
+        <div class="card-body">
+          <h4 class="mb-3">Reviews</h4>
+
+          {{#if reviews.length}}
+          
+            {{#each reviews}}
+              <div class="card mb-3 profile-review-card">
+                <div class="card-body">
+                  <h5 class="card-title">{{this.song_title}}</h5>
+                  <p class="card-text">{{this.review_text}}</p>
+                  <p class="card-text"><small class="text-muted">Rating: {{this.rating}}/5</small></p>
+                </div>
+              </div>
+            {{/each}}
+
+          {{else}}
+            <div class="review-placeholder">
+              <p class="mb-0 text-muted">No reviews yet.</p>
+            </div>
+          {{/if}}
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
