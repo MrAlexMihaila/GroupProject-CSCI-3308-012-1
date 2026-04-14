@@ -1,5 +1,5 @@
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="position-fixed top-0 bg-white pb-2" style="left: 280px; width: calc(100% - 280px); z-index: 1020; padding: 1rem;">
+  <div class="d-flex justify-content-between align-items-center">
     <h2>Explore Genres</h2>
     <form class="d-flex" method="GET" action="/genres">
       <input
@@ -13,11 +13,13 @@
       <button class="btn btn-outline-primary" type="submit">Search</button>
     </form>
   </div>
+</div>
 
+<div style="padding-top: 100px;"> <!-- Add padding to account for fixed header -->
   {{#if search}}
     {{#if artists}}
       <div class="mb-4">
-        <h3 class="mb-2 position-sticky" style="top:0; background:#fff; z-index:1;">Top Artists in {{search}}</h3>
+        <h3 class="mb-2">Top Artists in {{search}}</h3>
         <div class="row-scroll row-1">
           {{#each artists}}
             <div class="col-2-4">
@@ -30,7 +32,7 @@
 
     {{#if songs}}
       <div class="mb-4">
-        <h3 class="mb-2 position-sticky" style="top:0; background:#fff; z-index:1;">Top Songs in {{search}}</h3>
+        <h3 class="mb-2">Top Songs in {{search}}</h3>
         <div class="row-scroll row-1">
           {{#each songs}}
             <div class="col-2-4">
