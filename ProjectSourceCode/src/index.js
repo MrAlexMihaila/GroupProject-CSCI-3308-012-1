@@ -366,6 +366,59 @@ const auth = (req, res, next) => {
   next();
 };
 
+// User profile route
+app.get('/profile', auth, async (req, res) => {
+  res.render('pages/profile', {
+    user: req.session.user,
+    isOwnProfile: true,
+  });
+});
+
+// Public profile route
+app.get('/profile/:userid', async (req, res) => {
+  
+  // convert user id to integer and check if valid
+  const userId = Number.parseInt(req.params.userid, 10);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).render('pages/profile', {
+      message: 'Invalid user id.',
+      user: null,
+      isOwnProfile: false,
+    });
+  }
+
+  try {
+    // query user id from database
+    const profileUser = await db.oneOrNone(
+      'SELECT user_id, username FROM users WHERE user_id = $1',
+      [userId]
+    );
+
+    if (!profileUser) {
+      return res.status(404).render('pages/profile', {
+        message: 'User not found.',
+        user: null,
+        isOwnProfile: false,
+      });
+    }
+
+    // check if the it is the logged in users profile
+    const isOwnProfile =
+      req.session.user && req.session.user.user_id === profileUser.user_id;
+    
+    return res.render('pages/profile', {
+      profileUser,
+      isOwnProfile,
+    });
+  } catch (err) {
+    return res.status(500).render('pages/profile', {
+      message: 'Something went wrong loading this profile.',
+      profileUser: null,
+      isOwnProfile: false,
+    });
+  }
+});
+
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/home');
