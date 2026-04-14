@@ -1,10 +1,11 @@
 CREATE TABLE users (
   user_id SERIAL PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE,
-  --email VARCHAR(100) NOT NULL UNIQUE,
+  --email VARCHAR(100) NOT NULL UNIQUE,--
   password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  user_image_url VARCHAR(255)
+); 
 
 CREATE TABLE follows (
   following_user_id INT NOT NULL,
@@ -63,7 +64,7 @@ CREATE TABLE reviews (
   user_id INT NOT NULL,
   song_id VARCHAR(50),
   album_id VARCHAR(50),
-  rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  rating SMALLINT NOT NULL CHECK (rating BETWEEN 0 AND 5),
   review_text TEXT,
   likes INT DEFAULT 0,
   dislikes INT DEFAULT 0,
@@ -105,6 +106,7 @@ CREATE TABLE song_comments (
   song_id VARCHAR(50) NOT NULL,
   timestamp_seconds INT NOT NULL CHECK (timestamp_seconds >= 0),
   comment_text TEXT NOT NULL,
+  UNIQUE (user_id, song_id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,

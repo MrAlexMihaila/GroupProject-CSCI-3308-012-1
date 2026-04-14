@@ -1,4 +1,4 @@
-<div class="container-fluid" id="song-page" data-song-id="{{songID}}">
+<div class="container-fluid" id="song-page" data-song-uri="{{songURI}}" data-song-id="{{songID}}">
   <div class="row">
     <div class="col-md-3 bg-light vh-100 p-4 ms-5">
         {{#if albumImages.[0].url}}
@@ -13,11 +13,26 @@
         <p class="text-muted">
             <i class="bi bi-clock"></i> {{time}}
         </p>
+        <p>
+            <strong>Community Rating:</strong>
+            {{#if songRating}}
+                {{songRating}}
+            {{else}}
+                No ratings yet
+            {{/if}}
+        </p>
         
         {{#if login}}
-            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
-                Add Review
-            </button>
+            {{#if userReview}}
+                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
+                    Edit Review
+                </button>
+            {{else}}
+                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
+                    Add Review
+                </button>
+            {{/if}}
+            
         {{else}}
             <button class="btn btn-primary mt-3" data-bs-toggle="modal">
                 Please login to add a review!
@@ -27,13 +42,70 @@
     <div class="col-md-7 p-4">
         <div class="row">
             <div class="col-md-6">
-                <h5>Lyrics</h5>
-                <p>...</p>
+                <h5>Community Reviews</h5>
+                {{#if reviews.length}}
+                    {{#each reviews}}
+                        <div class="border p-2 mb-2">
+                            <strong>{{username}}</strong>
+                            <span class="ms-2">({{gradeFromRating rating}})</span>
+                            <p>{{review_text}}</p>
+                        </div>
+                    {{/each}}
+                {{else}}
+                    <p>No reviews yet.</p>
+                {{/if}}
             </div>
 
             <div class="col-md-6">
-                <h5>Community Ratings</h5>
-                <p>Insert reviews here</p>
+                <h5>Player</h5>
+
+                <div id="player-ui" class="border p-3 mb-3">
+
+                    <button id="play-btn" class="btn btn-primary btn-sm">Play</button>
+                    <button id="pause-btn" class="btn btn-secondary btn-sm">Pause</button>
+                    {{#if login}}
+                        {{#if userLoggedIntoSpotify}}
+                            {{#if userTimeStampComment}}
+                                <button class="btn btn-primary mt-3 timestampCommentClass" data-bs-toggle="modal" id="timestampCommentID" data-bs-target="#add_timestamp_modal">
+                                    Edit Timestamp Comment
+                                </button>
+                            {{else}}
+                                <button class="btn btn-primary mt-3" data-bs-toggle="modal" id="timestampCommentID" data-bs-target="#add_timestamp_modal">
+                                    Add Timestamp Comment
+                                </button>
+                            {{/if}}
+                        {{else}}
+                            <button class="btn btn-primary mt-3" data-bs-toggle="modal">
+                                Please connect with Spotify to add a timestamp comment!
+                            </button>
+                        {{/if}}
+                    {{else}}
+                        <button class="btn btn-primary mt-3" data-bs-toggle="modal">
+                            Please login to add a timestamp comment!
+                        </button>
+                    {{/if}}
+
+                    <div class="mt-3">
+                        <input type="range" id="seek-bar" min="0" max="100" value="0" class="w-100">
+                    </div>
+
+                    <div class="mt-2">
+                        <span id="time-display">0:00</span>
+                    </div>
+
+                </div>
+                <h5>Timestamp Comments</h5>
+                {{#if timestampComments.length}}
+                    {{#each timestampComments}}
+                        <div class="border p-2 mb-2">
+                            <strong>{{username}}</strong>
+                            <span class="ms-2">({{timestamp_seconds}})</span>
+                            <p>{{comment_text}}</p>
+                        </div>
+                    {{/each}}
+                {{else}}
+                    <p>No reviews yet.</p>
+                {{/if}}
             </div>
         </div>
     </div>
@@ -58,21 +130,21 @@
                 <div class="mb-3">
                     <label for="review_rating" class="form-label">Rating</label>
                     <select class="form-select" id="review_rating">
-                        <option value="rating_a">A</option>
-                        <option value="rating_b">B</option>
-                        <option value="rating_c">C</option>
-                        <option value="rating_d">D</option>
-                        <option value="rating_e">E</option>
-                        <option value="rating_f">F</option>
+                        <option value="rating_a" {{#if (eq userReview.rating 5)}}selected{{/if}}>A</option>
+                            <option value="rating_b" {{#if (eq userReview.rating 4)}}selected{{/if}}>B</option>
+                            <option value="rating_c" {{#if (eq userReview.rating 3)}}selected{{/if}}>C</option>
+                            <option value="rating_d" {{#if (eq userReview.rating 2)}}selected{{/if}}>D</option>
+                            <option value="rating_e" {{#if (eq userReview.rating 1)}}selected{{/if}}>E</option>
+                            <option value="rating_f" {{#if (eq userReview.rating 0)}}selected{{/if}}>F</option>
                     </select>
                 </div>
 
                 <!-- review description -->
                 <div class="mb-3">
                     <label for="review_description" class="form-label">Review Description</label>
-                    <input type="text" class="form-control"
-                        id="review_description"
-                        placeholder="Write your review here, if you want!">
+                    <input type="text" class="form-control" id="review_description"
+                    value="{{#if userReview}}{{userReview.review_text}}{{/if}}"
+                    placeholder="Write your review here, if you want!">
                 </div>
 
                 <!-- Footer -->
@@ -90,3 +162,46 @@
         </div>
     </div>
 </div>
+
+<!-- modal to add a timestamp -->
+<div class="modal" tabindex="-1" id="add_timestamp_modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">Add Timestamp Comment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <form onsubmit="return addTimestampComment();">
+
+                    <div class="mb-3">
+                        <label class="form-label">Timestamp</label>
+                        <input type="text" id="timestamp_display" class="form-control" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Comment</label>
+                        <input type="text" id="timestamp_comment" class="form-control">
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Close
+                        </button>
+                        <button class="btn btn-primary" type="submit">
+                            Save Comment
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    //just for token for web playback
+    const SPOTIFY_TOKEN = "{{spotifyToken}}";
+</script>

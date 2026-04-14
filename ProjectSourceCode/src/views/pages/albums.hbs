@@ -2,19 +2,31 @@
 
 <div class="container mt-4">
 
+  <!-- Header -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold">Albums</h2>
-    <span class="text-muted small">{{album_list.length}} results</span>
   </div>
 
-  <div class="row g-4">
+  <div class="mb-3">
+    <h3 class="mb-2 position-sticky" style="top:0; background:#fff; z-index:1;">Top Albums</h3>
+    <div class="row-scroll row-1">
+      {{#each topAlbums}}
+        <div class="col-2-4">
+          {{> album_card}}
+        </div>
+      {{/each}}
+    </div>
+  </div>
 
-    {{#each album_list}}
-      <div class="col-2-4">
-        {{> album_card}}
-      </div>
-    {{/each}}
-
+  <div>
+    <h3 class="mb-2 position-sticky" style="top:0; background:#ffffff; z-index:1;">Popular Albums</h3>
+    <div class="row-scroll row-4">
+      {{#each popularAlbums}}
+        <div class="col-2-4">
+          {{> album_card}}
+        </div>
+      {{/each}}
+    </div>
   </div>
 
 </div>
