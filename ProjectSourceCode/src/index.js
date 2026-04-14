@@ -484,7 +484,7 @@ app.get('/genres', async (req, res) => {
       params: {
         q: `genre:"${search}"`,
         type: 'artist',
-        limit: 10, // Get top 10 artists for the genre
+        limit: 10, 
       },
     });
 
@@ -494,7 +494,6 @@ app.get('/genres', async (req, res) => {
       return res.render('pages/genres', { isGenres: true, search, songs: [] });
     }
 
-    // Get top tracks for each artist
     const songsPromises = artists.map(async (artist) => {
       try {
         const tracksResponse = await axios({
@@ -504,10 +503,10 @@ app.get('/genres', async (req, res) => {
             Authorization: `Bearer ${token}`,
           },
           params: {
-            market: 'US', // Or user's market, but US is fine
+            market: 'US',
           },
         });
-        return tracksResponse.data.tracks.slice(0, 5); // Top 5 tracks per artist
+        return tracksResponse.data.tracks.slice(0, 5);
       } catch (err) {
         console.error(`Error getting top tracks for artist ${artist.id}:`, err.message);
         return [];
@@ -515,7 +514,7 @@ app.get('/genres', async (req, res) => {
     });
 
     const songsArrays = await Promise.all(songsPromises);
-    const songs = songsArrays.flat(); // Flatten the array of arrays
+    const songs = songsArrays.flat();
 
     // Remove duplicates if any
     const uniqueSongs = songs.filter((song, index, self) =>
