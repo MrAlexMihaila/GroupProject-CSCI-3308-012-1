@@ -1,5 +1,30 @@
-<div class="container mt-4">
-    <p>
-        Dummy text for genres. To be replaced.
-    </p>
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Explore Genres</h2>
+    <form class="d-flex" method="GET" action="/genres">
+      <input
+        type="text"
+        class="form-control me-2"
+        name="search"
+        placeholder="Search by genre"
+        value="{{search}}"
+        aria-label="Search genres"
+      />
+      <button class="btn btn-outline-primary" type="submit">Search</button>
+    </form>
+  </div>
+
+  {{#if songs}}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+      {{#each songs}}
+        <div class="col">
+          {{> song_card}}
+        </div>
+      {{/each}}
+    </div>
+  {{else if search}}
+    <div class="alert alert-info">No songs found for the genre "{{search}}".</div>
+  {{else}}
+    <div class="alert alert-info">Search for a genre to discover songs.</div>
+  {{/if}}
 </div>
