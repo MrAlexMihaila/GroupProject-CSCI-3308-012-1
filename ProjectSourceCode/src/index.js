@@ -729,7 +729,17 @@ app.post('/addReview', auth, async (req, res) => {
     const track = response.data;
     const title = track.name;
     const duration = Math.floor(track.duration_ms / 1000);
-    const releaseDate = track.album.release_date;
+    let releaseDate = track.album.release_date;
+
+    if(releaseDate.length === 4) //just a year
+    {
+      releaseDate = `${releaseDate}-01-01`;
+    }
+    else if(releaseDate.length === 7) //just year and month
+    {
+      releaseDate = `${releaseDate}-01`;
+    }
+
     const trackNumber = track.track_number;
     const albumId = track.album.id;
     const albumTitle = track.album.name;
