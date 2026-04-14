@@ -177,6 +177,27 @@ async function getRecentReviews(userid, limit = 5) {
   }
 }
 
+// helper to get friend count
+async function getFriendCount(userid) {
+  try {
+    const result = await db.one(
+      `SELECT COUNT(*) AS friend_count
+        FROM follows f WHERE f.following_user_id = $1
+        AND EXISTS (
+          SELECT 1
+          FROM follows r
+          WHERE r.following_user_id = f.followed_user_id
+          AND r.followed_user_id = $1
+        );`,
+      [userid])
+      return Number(result.friend_count) || 0;
+      
+  } catch (err) {
+    console.error('Error fetching friend count:', err);
+    return 0;
+  }
+}
+
 // database configuration
 const dbConfig = {
   host: 'db', // the database server
@@ -597,12 +618,14 @@ const auth = (req, res, next) => {
 // User profile route
 app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
+  const friendCount = await getFriendCount(req.session.user.user_id);
   console.log(reviews);
   res.render('pages/profile', {
     user: req.session.user,
     profileUser: req.session.user,
     isOwnProfile: true,
-    reviews
+    reviews,
+    friendCount
   });
 });
 
@@ -617,7 +640,8 @@ app.get('/profile/:userid', async (req, res) => {
       message: 'Invalid user id.',
       profileUser: null,
       isOwnProfile: false,
-      reviews: []
+      reviews: [],
+      friendCount: 0
     });
   }
 
@@ -637,7 +661,8 @@ app.get('/profile/:userid', async (req, res) => {
         message: 'User not found.',
         profileUser: null,
         isOwnProfile: false,
-        reviews: []
+        reviews: [],
+        friendCount: 0
       });
     }
 
@@ -647,23 +672,29 @@ app.get('/profile/:userid', async (req, res) => {
     if (isOwnProfile) {
       return res.redirect('/profile');
     }
-
+    
+    // get the most recent reviews
     const reviews = await getRecentReviews(profileUser.user_id);
 
-    console.log(reviews);
+    // get the friend count
+    const friendCount = await getFriendCount(profileUser.user_id);
 
     return res.render('pages/profile', {
         user: req.session.user,
         profileUser: profileUser,
-        isOwnProfile: false,
-        reviews: reviews
+        isOwnProfile,
+        reviews: reviews,
+        friendCount: friendCount
     });
+
   } catch (err) {
     return res.status(500).render('pages/profile', {
       user: req.session.user,
       message: 'Something went wrong loading this profile.',
       profileUser: null,
       isOwnProfile: false,
+      reviews: [],
+      friendCount: 0
     });
   }
 });
@@ -1062,7 +1093,7 @@ app.get('/friends', auth, async (req, res) => {
 
 app.post('/friends/add', async (req, res) => {
   const currentUserId = req.session.user?.user_id;
-  const { userId } = req.body;
+  const { userId, followedId } = req.body;
 
   if (!currentUserId) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -1078,6 +1109,10 @@ app.post('/friends/add', async (req, res) => {
        ON CONFLICT DO NOTHING`,
       [currentUserId, userId]
     );
+
+    if (followedId) {
+      return res.redirect('/profile/' + encodeURIComponent(followedId));
+    }
 
     res.redirect('/friends?search=' + encodeURIComponent(req.body.search || ''));
   } catch (err) {
