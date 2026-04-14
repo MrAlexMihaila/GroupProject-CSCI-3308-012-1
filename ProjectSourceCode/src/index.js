@@ -327,7 +327,7 @@ app.post('/register', async (req, res) => {
       // Any other registration error should still respond (prevents request timeouts).
       return res.status(400).json({ message: 'Failed to register!'});
     } catch(err) {
-      //console.log("Database Error:", err.message || err);
+    //console.log("Database Error:", err.message || err);
       return res.status(400).json({ message: 'Failed to register!'});
     }
   }
@@ -875,36 +875,46 @@ app.post('/addReview', auth, async (req, res) => {
 
 app.post('/addAlbumReview', auth, async (req, res) => {
   const userId = req.session.user.user_id;
-  const {rating, description, albumID} = req.body;
-  if(rating < 0 || rating > 5) //somehow got invalid request
-  {
+  const { rating, description, albumID } = req.body;
+
+  if (rating < 0 || rating > 5) {
     console.log("invalid rating?");
     console.log(rating);
     return res.status(400).json({
       error: "Invalid Rating Sent"
     });
   }
-  try{
-    // need to save locally first before we can add review
+
+  try {
+    // fetch album from Spotify
     const token = await getSpotifyToken();
     const response = await axios({
       url: `https://api.spotify.com/v1/albums/${albumID}`,
       method: "GET",
       headers: { Authorization: `Bearer ${token}` }
     });
-
+    
     const album = response.data;
     const title = album.name;
     const releaseDate = album.release_date;
     const image = album.images?.[0]?.url ?? null;
 
+    if(releaseDate.length === 4) //just a year
+    {
+      releaseDate = `${releaseDate}-01-01`;
+    }
+    else if(releaseDate.length === 7) //just year and month
+    {
+      releaseDate = `${releaseDate}-01`;
+    }
+
+    // insert album to sql table
     await db.none(
       `INSERT INTO albums (album_id, title, release_date, image_url)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (album_id) DO NOTHING`,
       [albumID, title, releaseDate, image]
     );
-
     // finally attempt to insert review into table
     await db.none(
       `INSERT INTO reviews (user_id, album_id, rating, review_text)
