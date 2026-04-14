@@ -1092,7 +1092,7 @@ app.get('/friends', auth, async (req, res) => {
 
   try {
     const query = `
-      SELECT user_id, username, DATE(created_at) AS created_at, COALESCE(user_image_url, '/resources/img/default-profile.png') AS user_image_url,
+      SELECT user_id, username, TO_CHAR(created_at::date, 'Mon DD YYYY') AS created_at, COALESCE(user_image_url, '/resources/img/default-profile.png') AS user_image_url,
              (SELECT COUNT(*) FROM follows WHERE followed_user_id = users.user_id) AS followers_count
       FROM users
       WHERE username ILIKE $1 AND user_id <> $2

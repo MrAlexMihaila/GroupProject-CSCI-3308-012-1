@@ -27,19 +27,23 @@
           
           <!-- Display friend status !-->
           {{else if profileUser}}
-            {{#if isFriend}}
-              <p class="text-muted mb-0">You and {{profileUser.username}} are friends.</p>
 
-            {{else if isPending}}
-              <p class="btn btn-outline-primary mt-3 mb-0">Friend Request Pending</p>
+            <!-- Only show if user is logged in -->
+            {{# if user}}
+              {{#if isFriend}}
+                <p class="text-muted mb-0">You and {{profileUser.username}} are friends.</p>
 
-            {{else}}
-              <!-- Form to send friend request -->
-              <form method="POST" action="/friends/add" class="mt-3">
-                <input type="hidden" name="userId" value="{{profileUser.user_id}}">
-                <input type="hidden" name="followedId" value="{{profileUser.user_id}}">
-                <button type="submit" class="btn btn-primary">Send Friend Request</button>
-              </form>
+              {{else if isPending}}
+                <p class="btn btn-outline-primary mt-3 mb-0">Friend Request Pending</p>
+
+              {{else}}
+                <!-- Form to send friend request -->
+                <form method="POST" action="/friends/add" class="mt-3">
+                  <input type="hidden" name="userId" value="{{profileUser.user_id}}">
+                  <input type="hidden" name="followedId" value="{{profileUser.user_id}}">
+                  <button type="submit" class="btn btn-primary">Send Friend Request</button>
+                </form>
+              {{/if}}
 
             {{/if}}
 
