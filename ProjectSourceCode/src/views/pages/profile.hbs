@@ -10,18 +10,28 @@
     <div class="col-12 col-lg-4">
       <div class="card profile-user-card">
         <div class="card-body text-center">
+          
+          <!-- Profile Picture and Info -->
           <img
             src="/resources/img/default-profile.png"
             alt="Profile Picture"
             class="rounded-circle mb-3 profile-avatar"
           >
           <h3 class="mb-1">{{#if profileUser}}{{profileUser.username}}{{else}}Unknown User{{/if}}</h3>
+
+          <!-- Friend Count -->
           <p class="text-muted mb-0">{{friendCount}} friends</p>
+
           {{#if isOwnProfile}}
             <p class="text-muted mb-0">This is your profile.</p>
+          
+          <!-- Display friend status !-->
           {{else if profileUser}}
-
             {{#if isFriend}}
+              <p class="text-muted mb-0">You and {{profileUser.username}} are friends.</p>
+
+            {{else if isPending}}
+              <p class="btn btn-outline-primary mt-3 mb-0">Friend Request Pending</p>
 
             {{else}}
               <!-- Form to send friend request -->
@@ -30,6 +40,7 @@
                 <input type="hidden" name="followedId" value="{{profileUser.user_id}}">
                 <button type="submit" class="btn btn-primary">Send Friend Request</button>
               </form>
+
             {{/if}}
 
           {{/if}}

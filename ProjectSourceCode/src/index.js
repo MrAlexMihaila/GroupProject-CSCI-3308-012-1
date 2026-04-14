@@ -198,6 +198,34 @@ async function getFriendCount(userid) {
   }
 }
 
+// helper to check if two users are friends
+async function checkIfFriends(userId1, userId2) {
+  const isFriend = await db.oneOrNone(
+    `SELECT 1 AS friend_count
+      FROM follows f WHERE f.following_user_id = $1 AND f.followed_user_id = $2
+      AND EXISTS (
+        SELECT 1
+        FROM follows r
+        WHERE r.following_user_id = f.followed_user_id AND r.followed_user_id = $1
+      );`,
+    [userId1, userId2]
+  );
+
+  return Boolean(isFriend);
+}
+
+// helper to check if there is a pending friend request between two users
+// should come after an isFriend check
+async function checkIfPending(userId1, userId2) {
+  const isPending = await db.oneOrNone(
+    `SELECT 1 AS friend_count
+      FROM follows f WHERE f.following_user_id = $1 AND f.followed_user_id = $2;`,
+    [userId1, userId2]
+  );
+
+  return Boolean(isPending);
+}
+
 // database configuration
 const dbConfig = {
   host: 'db', // the database server
@@ -615,11 +643,10 @@ const auth = (req, res, next) => {
   next();
 };
 
-// User profile route
+// Logged in user profile route
 app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
   const friendCount = await getFriendCount(req.session.user.user_id);
-  console.log(reviews);
   res.render('pages/profile', {
     user: req.session.user,
     profileUser: req.session.user,
@@ -679,14 +706,33 @@ app.get('/profile/:userid', async (req, res) => {
     // get the friend count
     const friendCount = await getFriendCount(profileUser.user_id);
 
+    const viewerUserId = req.session.user?.user_id || null;
+
+    // check if users are friends
+    const isFriend = await checkIfFriends(viewerUserId, profileUser.user_id);
+    console.log("isFriend:", isFriend);
+    console.log("got here 2");
+
+    // check for pending status
+    let isPending = false;
+    if (!isFriend) {
+      isPending = await checkIfPending(viewerUserId, profileUser.user_id);
+      console.log("isPending:", isPending);
+    }
+    console.log("got here 3");
+
+    // render profile page
     return res.render('pages/profile', {
         user: req.session.user,
         profileUser: profileUser,
         isOwnProfile,
         reviews: reviews,
-        friendCount: friendCount
+        friendCount: friendCount,
+        isFriend,
+        isPending
     });
-
+  
+  // catch any unexpected errors
   } catch (err) {
     return res.status(500).render('pages/profile', {
       user: req.session.user,
@@ -694,7 +740,7 @@ app.get('/profile/:userid', async (req, res) => {
       profileUser: null,
       isOwnProfile: false,
       reviews: [],
-      friendCount: 0
+      friendCount: 0,
     });
   }
 });
