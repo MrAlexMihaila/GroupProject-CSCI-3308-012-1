@@ -884,29 +884,18 @@ app.post('/addReview', auth, async (req, res) => {
 
 app.post('/addAlbumReview', auth, async (req, res) => {
   const userId = req.session.user.user_id;
-<<<<<<< HEAD
-  const {rating, description, albumID} = req.body;
-  if(rating < 0 || rating > 5) //somehow got invalid request
-  {
-=======
   const { rating, description, albumID } = req.body;
 
   if (rating < 0 || rating > 5) {
->>>>>>> ac75e98 (Added post method /addAlbumReview (effectively a copy of post method addReview, although currently inaccessible))
     console.log("invalid rating?");
     console.log(rating);
     return res.status(400).json({
       error: "Invalid Rating Sent"
     });
   }
-<<<<<<< HEAD
-  try{
-    // need to save locally first before we can add review
-=======
 
   try {
     // fetch album from Spotify
->>>>>>> ac75e98 (Added post method /addAlbumReview (effectively a copy of post method addReview, although currently inaccessible))
     const token = await getSpotifyToken();
     const response = await axios({
       url: `https://api.spotify.com/v1/albums/${albumID}`,
@@ -919,10 +908,6 @@ app.post('/addAlbumReview', auth, async (req, res) => {
     const releaseDate = album.release_date;
     const image = album.images?.[0]?.url ?? null;
 
-<<<<<<< HEAD
-=======
-    // insert album to sql table
->>>>>>> ac75e98 (Added post method /addAlbumReview (effectively a copy of post method addReview, although currently inaccessible))
     await db.none(
       `INSERT INTO albums (album_id, title, release_date, image_url)
        VALUES ($1, $2, $3, $4)
@@ -930,19 +915,11 @@ app.post('/addAlbumReview', auth, async (req, res) => {
       [albumID, title, releaseDate, image]
     );
 
-<<<<<<< HEAD
-    // finally attempt to insert review into table
-    await db.none(
-      `INSERT INTO reviews (user_id, album_id, rating, review_text)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (user_id, song_id)
-=======
     // insert/update review
     await db.none(
       `INSERT INTO reviews (user_id, album_id, rating, review_text)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (user_id, album_id)
->>>>>>> ac75e98 (Added post method /addAlbumReview (effectively a copy of post method addReview, although currently inaccessible))
        DO UPDATE SET 
          rating = EXCLUDED.rating,
          review_text = EXCLUDED.review_text,
@@ -951,14 +928,8 @@ app.post('/addAlbumReview', auth, async (req, res) => {
     );
 
     return res.status(200).json({ success: true });
-<<<<<<< HEAD
-  } catch(err){
-    console.log("error inserting review into database", err.message);
-=======
-
   } catch (err) {
     console.log("error inserting album review into database", err.message);
->>>>>>> ac75e98 (Added post method /addAlbumReview (effectively a copy of post method addReview, although currently inaccessible))
     return res.status(500).json({
       error: "Database error"
     });
