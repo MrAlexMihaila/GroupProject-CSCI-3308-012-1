@@ -136,6 +136,25 @@ app.use(express.static(__dirname + '/')); //allow for anything in resources dire
 
 //basically everything above this line was taken from lab 7
 
+// helper function to get recent reviews
+async function getRecentReviews(userid, limit = 5) {
+  try {
+    const reviews = await db.any(
+      `SELECT r.review_id, r.rating, r.description, r.song_id, r.created_at, u.username
+        FROM reviews r
+        JOIN users u ON r.user_id = u.user_id
+        WHERE r.user_id = $1
+        ORDER BY r.created_at DESC
+        LIMIT $2`,
+      [userid, limit]
+    );
+    return reviews;
+  } catch (err) {
+    console.error('Error fetching recent reviews:', err);
+    return [];
+  }
+}
+
 //lab 10 test function
 app.get('/welcome', (req, res) => {
   res.json({status: 'success', message: 'Welcome!'});
@@ -368,9 +387,11 @@ const auth = (req, res, next) => {
 
 // User profile route
 app.get('/profile', auth, async (req, res) => {
+  const reviews = await getRecentReviews(req.session.user.user_id);
   res.render('pages/profile', {
     user: req.session.user,
     isOwnProfile: true,
+    reviews
   });
 });
 
@@ -384,6 +405,7 @@ app.get('/profile/:userid', async (req, res) => {
       message: 'Invalid user id.',
       user: null,
       isOwnProfile: false,
+      reviews: []
     });
   }
 
@@ -399,6 +421,7 @@ app.get('/profile/:userid', async (req, res) => {
         message: 'User not found.',
         user: null,
         isOwnProfile: false,
+        reviews: []
       });
     }
 
@@ -406,9 +429,12 @@ app.get('/profile/:userid', async (req, res) => {
     const isOwnProfile =
       req.session.user && req.session.user.user_id === profileUser.user_id;
     
+    const reviews = await getRecentReviews(profileUser.user_id);
+
     return res.render('pages/profile', {
       profileUser,
       isOwnProfile,
+      reviews
     });
   } catch (err) {
     return res.status(500).render('pages/profile', {
