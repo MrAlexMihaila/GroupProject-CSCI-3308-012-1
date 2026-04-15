@@ -26,7 +26,7 @@ SPOTIFY_CLIENT_ID=client id from Spotify API
 SPOTIFY_CLIENT_SECRET=client secret from Spotify API
 ```
 
-Then, run `docker compose up` to start the local server. Afterwards, navigate to [http://127.0.0.1:3000/home](http://127.0.0.1:3000/home) or [localhost](http://localhost:3000/home) in order to view the website locally. Run `docker compose down` to close the local server.
+Then, run `docker compose up` to start the local server. Afterwards, navigate to [http://127.0.0.1:3000/home](http://127.0.0.1:3000/home) or [http://localhost:3000/home](http://localhost:3000/home) in order to view the website locally. Run `docker compose down` to close the local server.
 
 ## How to run tests
 The tests run everytime `docker compose up` is run, testing the register/login system to ensure they are working as expected.
