@@ -581,14 +581,27 @@ app.get('/songs', async (req, res) => {
     console.log("top charts count:", topCharts.length);
 
     const popularResponse = await axios({
+      url: "https://api.spotify.com/v1/playlists/1ti3v0lLrJ4KhSTuxt4loZ/tracks", // classic rock playlist
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { limit: 50, market: "US" }
+    });
+
+    const popular = popularResponse.data.items
+      .map(item => item.track)
+      .filter(t => t !== null);
+    console.log("popular count:", popular.length);
+/*
+    const popularResponse = await axios({
       url: "https://api.spotify.com/v1/search",
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
       params: { q: "yacht rock", type: "track", limit: 50 }
     });
+
     const popular = popularResponse.data.tracks.items.filter(t => t !== null);
     console.log("popular count:", popular.length);
-
+*/
     res.render('pages/songs_tab', { topCharts, popular, isSongs: true });
   } catch (err) {
     console.error(err.response?.data || err.message);
