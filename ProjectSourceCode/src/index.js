@@ -559,21 +559,26 @@ app.get('/albums', async (req, res) => {
     res.render('pages/albums', { topAlbums: [], popularAlbums: [], isAlbums: true });
   }
 });
-/*it works, but it doesn't fetch the playlists like it should, Im just searching top hits 2025, or popular songs 2025 so theres some bad data*/ 
+
+
 app.get('/songs', async (req, res) => {
   try {
     const token = await getSpotifyToken();
 
-    //let USATop50PlaylistID = "3DLP1u57jcYremGNWw9Gfn"; //playlist id for a custom playlist i made with the current top 50 songs in the usa
-
-    const topChartsResponse = await axios({
-      url: "https://api.spotify.com/v1/search",
+    const top50Response = await axios({
+      url: "https://api.spotify.com/v1/playlists/5FN6Ego7eLX6zHuCMovIR2/tracks", // link to a global top 50 playlist
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
-      params: { q: "top hits 2025", type: "track", limit: 50 }
+      params: { limit: 50, market: "US" }
     });
-    const topCharts = topChartsResponse.data.tracks.items.filter(t => t !== null);
-    console.log("topCharts count:", topCharts.length);
+
+    //console.log("raw response status:", top50Response.status);
+    //console.log("raw items:", JSON.stringify(top50Response.data.items?.slice(0, 2), null, 2));
+    //testing to see if we can get the tracks from the playlist response, and filter out any nulls just in case
+    const topCharts = top50Response.data.items
+      .map(item => item.track)
+      .filter(t => t !== null);
+    console.log("top charts count:", topCharts.length);
 
     const popularResponse = await axios({
       url: "https://api.spotify.com/v1/search",
