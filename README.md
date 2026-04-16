@@ -32,4 +32,4 @@ Then, run `docker compose up` to start the local server. Afterwards, navigate to
 The tests run everytime `docker compose up` is run, testing the register/login system to ensure they are working as expected.
 
 ## Link
-(todo)
+Link to deployed application: [https://groupproject-csci-3308-012-1.onrender.com/](https://groupproject-csci-3308-012-1.onrender.com/)
