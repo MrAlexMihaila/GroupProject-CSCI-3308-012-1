@@ -1091,44 +1091,66 @@ app.get('/friends', auth, async (req, res) => {
   const currentUserId = req.session.user?.user_id;
 
   try {
-    const query = `
-      SELECT user_id, username, TO_CHAR(created_at::date, 'Mon DD YYYY') AS created_at, COALESCE(user_image_url, '/resources/img/default-profile.png') AS user_image_url,
-             (
-               SELECT COUNT(*)
-               FROM follows f
-               WHERE f.following_user_id = users.user_id
-                 AND EXISTS (
-                   SELECT 1
-                   FROM follows r
-                   WHERE r.following_user_id = f.followed_user_id
-                     AND r.followed_user_id = users.user_id
-                 )
-             ) AS friend_count
-      FROM users
-      WHERE username ILIKE $1 AND user_id <> $2
-      ORDER BY username ASC
+    const values = [currentUserId || 0, `%${search}%`];
+
+    // query retrieves friends first, then first degree followers, then everyone else, filtered by search term
+    const friendsFirstQuery = `
+      WITH relationship AS (
+        SELECT u.user_id,
+          EXISTS (
+            SELECT 1
+            FROM follows f
+            WHERE f.following_user_id = $1 AND f.followed_user_id = u.user_id
+          ) AS is_following,
+          EXISTS (
+            SELECT 1
+            FROM follows f
+            WHERE f.following_user_id = u.user_id AND f.followed_user_id = $1
+          ) AS follows_you
+        FROM users u
+        WHERE u.user_id <> $1
+      ),
+      friend_totals AS (
+        SELECT
+          u.user_id,
+          COUNT(*)::int AS friend_count
+        FROM users u
+        JOIN follows f ON f.following_user_id = u.user_id
+        WHERE EXISTS (
+          SELECT 1
+          FROM follows r
+          WHERE r.following_user_id = f.followed_user_id
+            AND r.followed_user_id = u.user_id
+        )
+        GROUP BY u.user_id
+      )
+      SELECT
+        u.user_id,
+        u.username,
+        COALESCE(TO_CHAR(u.created_at::date, 'Mon DD YYYY'), '') AS created_at,
+        COALESCE(u.user_image_url, '/resources/img/default-profile.png') AS user_image_url,
+        COALESCE(ft.friend_count, 0) AS friend_count,
+        rel.is_following AS "isFollowing",
+        (rel.is_following AND rel.follows_you) AS "isFriend",
+        CASE
+          WHEN rel.is_following AND rel.follows_you THEN 0
+          ELSE 1
+        END AS relationship_rank
+      FROM users u
+      JOIN relationship rel ON rel.user_id = u.user_id
+      LEFT JOIN friend_totals ft ON ft.user_id = u.user_id
+      WHERE u.username ILIKE $2
+      ORDER BY relationship_rank ASC, u.username ASC
       LIMIT 20
     `;
 
-    // The value includes the wildcards
-    const values = [`%${search}%`, currentUserId || 0];
-
-    const users = await db.any(query, values);
-
-    const followQuery = `
-      SELECT followed_user_id
-      FROM follows
-      WHERE following_user_id = $1
-    `;
-
-    const followedRows = await db.any(followQuery, [currentUserId || 0]);
-    const followedIds = new Set(followedRows.map((row) => row.followed_user_id));
+    const users = await db.any(friendsFirstQuery, values);
 
     const usersDisplay = users.map((u) => ({
       ...u,
-      created_at: u.created_at,
       friend_count: Number(u.friend_count) || 0,
-      isFollowing: followedIds.has(u.user_id),
+      isFollowing: Boolean(u.isFollowing),
+      isFriend: Boolean(u.isFriend),
     }));
 
     res.render('pages/friends', {
