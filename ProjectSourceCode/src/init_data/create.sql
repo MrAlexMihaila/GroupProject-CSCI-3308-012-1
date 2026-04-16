@@ -77,6 +77,20 @@ CREATE TABLE reviews (
   FOREIGN KEY (album_id) REFERENCES albums(album_id) ON DELETE CASCADE
 );
 
+CREATE TABLE review_reactions (
+  user_id INT NOT NULL,
+  review_id INT NOT NULL,
+  reaction SMALLINT NOT NULL, --where 1 is like, -1 is dislike
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (user_id, review_id),
+
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (review_id) REFERENCES reviews(review_id) ON DELETE CASCADE,
+
+  CHECK (reaction IN (1, -1))
+);
+
 CREATE TABLE genres (
   genre_id SERIAL PRIMARY KEY,
   name VARCHAR(50) NOT NULL UNIQUE
