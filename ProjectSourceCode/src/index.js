@@ -1093,8 +1093,9 @@ app.get('/friends', auth, async (req, res) => {
   try {
     const values = [currentUserId || 0, `%${search}%`];
 
-    // query retrieves friends first, then first degree followers, then everyone else, filtered by search term
     const friendsFirstQuery = `
+      -- determine relationship status with each user
+      -- relationship_rank orders friends first, then first-degree, then others
       WITH relationship AS (
         SELECT u.user_id,
           EXISTS (
@@ -1110,6 +1111,8 @@ app.get('/friends', auth, async (req, res) => {
         FROM users u
         WHERE u.user_id <> $1
       ),
+
+      -- get friend count from mutual follows
       friend_totals AS (
         SELECT
           u.user_id,
@@ -1123,24 +1126,38 @@ app.get('/friends', auth, async (req, res) => {
             AND r.followed_user_id = u.user_id
         )
         GROUP BY u.user_id
+      ),
+
+      -- get follower totals
+      follower_totals AS (
+        SELECT
+          f.followed_user_id AS user_id,
+          COUNT(*)::int AS follower_count
+        FROM follows f
+        GROUP BY f.followed_user_id
       )
+
+      -- create a list for handlebars
       SELECT
         u.user_id,
         u.username,
-        COALESCE(TO_CHAR(u.created_at::date, 'Mon DD YYYY'), '') AS created_at,
-        COALESCE(u.user_image_url, '/resources/img/default-profile.png') AS user_image_url,
+        COALESCE(TO_CHAR(u.created_at::date, 'Mon DD YYYY'), '') AS created_at, -- formatted join date
+        COALESCE(u.user_image_url, '/resources/img/default-profile.png') AS user_image_url, -- avatar fallback
         COALESCE(ft.friend_count, 0) AS friend_count,
-        rel.is_following AS "isFollowing",
-        (rel.is_following AND rel.follows_you) AS "isFriend",
+        COALESCE(fot.follower_count, 0) AS follower_count,
+        rel.is_following AS "isFollowing", -- you follow them
+        (rel.is_following AND rel.follows_you) AS "isFriend", -- mutual followers
         CASE
           WHEN rel.is_following AND rel.follows_you THEN 0
-          ELSE 1
-        END AS relationship_rank
+          WHEN rel.is_following OR rel.follows_you THEN 1
+          ELSE 2
+        END AS relationship_rank -- friends, first-degree, then others
       FROM users u
       JOIN relationship rel ON rel.user_id = u.user_id
       LEFT JOIN friend_totals ft ON ft.user_id = u.user_id
+      LEFT JOIN follower_totals fot ON fot.user_id = u.user_id
       WHERE u.username ILIKE $2
-      ORDER BY relationship_rank ASC, u.username ASC
+      ORDER BY relationship_rank ASC, u.username ASC -- each group sorted A-Z
       LIMIT 20
     `;
 
@@ -1149,6 +1166,7 @@ app.get('/friends', auth, async (req, res) => {
     const usersDisplay = users.map((u) => ({
       ...u,
       friend_count: Number(u.friend_count) || 0,
+      follower_count: Number(u.follower_count) || 0,
       isFollowing: Boolean(u.isFollowing),
       isFriend: Boolean(u.isFriend),
     }));
