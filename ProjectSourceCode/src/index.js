@@ -676,7 +676,7 @@ app.get('/song/:id', async (req, res) => {
   .then(async response => {
     const songName = response.data.name;
     const artistsArray = response.data.artists;
-    const songAlbumImage = response.data.album.images;
+    const songAlbumImages = response.data.album.images;
     const songURI = response.data.uri;
 
     const totalSeconds = Math.floor(response.data.duration_ms / 1000);
@@ -745,7 +745,7 @@ app.get('/song/:id', async (req, res) => {
       userLoggedIntoSpotify = true;
     }
     
-    res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
+    res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImages, 
       time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: timestampComments, userReview: userReview, 
       userTimestampComment: userTimestampComment, songID: songID, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null,
       userLoggedIntoSpotify: userLoggedIntoSpotify, isSongs: true 
@@ -771,23 +771,72 @@ app.get('/albums_tab/:id', async (req, res) => {
   
     const albumName = response.data.name;
     const artistsArray = response.data.artists;
-    const albumImage = response.data.images;
+    const albumImages = response.data.images;
     const tracksArray = response.data.tracks.items;
 
     let loggedIn = !!req.session.user;
 
-    //code to calculate rating number will go here once we get database set up
-    //will just pass a dummy value for now
-    let albumRating = 3.0; //out of 5 "stars"
-    
+    // get album reviews
+    const reviews = await db.any(
+      `SELECT r.*, u.username
+      FROM reviews r
+      JOIN users u ON r.user_id = u.user_id
+      WHERE r.album_id = $1
+      ORDER BY r.created_at DESC`,
+      [albumID]
+    );
+
+    // calculate average rating
+    let albumRating = null;
+    let ratingLetter = "No Reviews";
+
+    if (reviews.length > 0) {
+      const total = reviews.reduce((sum, r) => sum + r.rating, 0);
+      albumRating = total / reviews.length;
+      ratingLetter = convertRatingToLetter(albumRating);
+    }
+
+    // get all track IDs
+    const trackIDs = tracksArray.map(t => t.id);
+
+    // fetch ratings from DB
+    const songRatings = await db.any(
+      `SELECT song_id, AVG(rating) as avg_rating
+      FROM reviews
+      WHERE song_id = ANY($1)
+      GROUP BY song_id`,
+      [trackIDs]
+    );
+
+    // convert to lookup map
+    const ratingMap = {};
+    songRatings.forEach(r => {
+      ratingMap[r.song_id] = convertRatingToLetter(r.avg_rating);
+    });
+
+    // attach rating to each track
+    const tracksWithRatings = tracksArray.map(track => ({
+      ...track,
+      rating: ratingMap[track.id] || null
+    }));
+
+    // find current user's review
+    let userReview = null;
+    if (req.session.user) {
+      userReview = reviews.find(
+        r => r.user_id === req.session.user.user_id
+      );
+    }
 
     res.render('pages/album', {
       name: albumName,
       artists: artistsArray,
       albumImages: albumImages,
-      tracks: tracksArray,
+      tracks: tracksWithRatings,
       login: loggedIn,
-      albumRating: albumRating,
+      albumRating: ratingLetter,
+      reviews: reviews,
+      userReview: userReview,
       albumID: albumID,
       isAlbums: true
     });
@@ -893,69 +942,6 @@ app.post('/addAlbumReview', auth, async (req, res) => {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` }
     });
-    
-    const album = response.data;
-    const title = album.name;
-    const releaseDate = album.release_date;
-    const image = album.images?.[0]?.url ?? null;
-
-    if(releaseDate.length === 4) //just a year
-    {
-      releaseDate = `${releaseDate}-01-01`;
-    }
-    else if(releaseDate.length === 7) //just year and month
-    {
-      releaseDate = `${releaseDate}-01`;
-    }
-
-    // insert album to sql table
-    await db.none(
-      `INSERT INTO albums (album_id, title, release_date, image_url)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (album_id) DO NOTHING`,
-      [albumID, title, releaseDate, image]
-    );
-    // finally attempt to insert review into table
-    await db.none(
-      `INSERT INTO reviews (user_id, album_id, rating, review_text)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (user_id, song_id)
-       DO UPDATE SET 
-         rating = EXCLUDED.rating,
-         review_text = EXCLUDED.review_text,
-         updated_at = CURRENT_TIMESTAMP;`,
-      [userId, albumID, rating, description]
-    );
-
-    return res.status(200).json({ success: true });
-  } catch(err){
-    console.log("error inserting review into database", err.message);
-    return res.status(500).json({
-      error: "Database error"
-    });
-  }
-});
-
-app.post('/addAlbumReview', auth, async (req, res) => {
-  const userId = req.session.user.user_id;
-  const { rating, description, albumID } = req.body;
-
-  if (rating < 0 || rating > 5) {
-    console.log("invalid rating?");
-    console.log(rating);
-    return res.status(400).json({
-      error: "Invalid Rating Sent"
-    });
-  }
-
-  try {
-    // fetch album from Spotify
-    const token = await getSpotifyToken();
-    const response = await axios({
-      url: `https://api.spotify.com/v1/albums/${albumID}`,
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` }
-    });
 
     const album = response.data;
     const title = album.name;
@@ -981,6 +967,7 @@ app.post('/addAlbumReview', auth, async (req, res) => {
          updated_at = CURRENT_TIMESTAMP;`,
       [userId, albumID, rating, description]
     );
+    console.log([userId, albumID, rating, description]);
 
     return res.status(200).json({ success: true });
 

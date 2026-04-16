@@ -6,6 +6,15 @@
                 <img src="{{albumImages.[0].url}}" class="img-fluid mb-3" alt="Album Art" />
             {{/if}}
 
+            <p>
+                <strong>Community Rating:</strong>
+                {{#if albumRating}}
+                    {{albumRating}}
+                {{else}}
+                    No ratings yet
+                {{/if}}
+            </p>
+
             <h4>{{name}}</h4>
 
             <p class="text-muted">
@@ -32,9 +41,18 @@
                     <ul class="list-group">
                         {{#each tracks}}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <a href="/songs_tab/{{this.id}}" class="text-decoration-none">
-                                    {{this.name}}
-                                </a>
+                                <div>
+                                    <a href="/songs_tab/{{this.id}}" class="text-decoration-none">
+                                        {{this.name}}
+                                    </a>
+
+                                    {{#if this.rating}}
+                                        <span class="ms-2 badge bg-primary">
+                                            {{this.rating}}
+                                        </span>
+                                    {{/if}}
+                                </div>
+
                                 <span class="text-muted">
                                     {{this.formattedDuration}}
                                 </span>
@@ -44,8 +62,30 @@
                 </div>
                 <!-- Reviews -->
                 <div class="col-md-6">
-                    <h5>Community Ratings</h5>
-                    <p>Insert album reviews here</p>
+                    <h5>Community Rating:</h5>
+                    {{#if reviews.length}}
+                        {{#each reviews}}
+                            <div class="border p-2 mb-2">
+                                <strong>{{username}}</strong>
+                                <span class="ms-2">({{gradeFromRating rating}})</span>
+                                <p>{{review_text}}</p>
+                            </div>
+                        {{/each}}
+                    {{else}}
+                        <p>No ratings yet</p>
+                    {{/if}}
+
+                    {{#if login}}
+                        {{#if userReview}}
+                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
+                                Edit Review
+                            </button>
+                        {{else}}
+                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
+                                Add Review
+                            </button>
+                        {{/if}}
+                    {{/if}}
                 </div>
             </div>
         </div>
@@ -100,47 +140,3 @@
         </div>
     </div>
 </div>
-<script>
-function handleAlbumSubmit() {
-    const ratingMap = {
-        A: 5,
-        B: 4,
-        C: 3,
-        D: 2,
-        E: 1,
-        F: 0
-    };
-
-    const ratingLetter = document.getElementById("review_rating").value;
-    const rating = ratingMap[ratingLetter];
-
-    const description = document.getElementById("review_description").value;
-    const albumID = document.getElementById("album_id").value;
-
-    fetch("/addAlbumReview", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            rating: rating,
-            description: description,
-            albumID: albumID
-        })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            location.reload(); // refresh page to show new review
-        } else {
-            alert("Failed to add review");
-        }
-    })
-    .catch(err => {
-        console.error("Error:", err);
-        alert("Something went wrong");
-    });
-
-    return false; // prevent default form submission
-}
-</script>

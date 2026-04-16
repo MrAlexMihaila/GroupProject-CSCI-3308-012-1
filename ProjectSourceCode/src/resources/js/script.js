@@ -50,6 +50,7 @@ function makeReview()
 
 function makeAlbumReview()
 {
+    console.log(document.getElementById("album-page"));
     return {
         albumID: document.getElementById("album-page").dataset.albumId,
         rating: convertRatingToInt(document.getElementById("review_rating").value),
@@ -58,6 +59,7 @@ function makeAlbumReview()
         likes: 0,
         dislikes: 0
     };
+    
 }
 
 //handles getting review data, and then sending it to server for proper checks and adding to database
@@ -65,7 +67,7 @@ async function handleSubmit()
 {
     const review = makeReview();
 
-    const res = fetch('/addReview', {
+    const res = await fetch('/addReview', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -89,7 +91,6 @@ async function handleSubmit()
 async function handleAlbumSubmit() 
 {
     const review = makeAlbumReview();
-
     const res = await fetch('/addAlbumReview', {
         method: 'POST',
         headers: {
@@ -97,6 +98,7 @@ async function handleAlbumSubmit()
         },
         body: JSON.stringify(review)
     });
+    console.log("Response status:", res.status);
 
     if(res.ok)
     {
@@ -199,6 +201,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         playerTimestampPosition = state.position/1000;
     })
+});
+
+//eventlistener for album review post
+document.addEventListener("DOMContentLoaded", () => {
+
+    const albumForm = document.getElementById("album_review_form");
+
+    if (albumForm) {
+        albumForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            await handleAlbumSubmit();
+        });
+    }
+
 });
 
 //basically a timer that will update the time display of the player every 500 ms
