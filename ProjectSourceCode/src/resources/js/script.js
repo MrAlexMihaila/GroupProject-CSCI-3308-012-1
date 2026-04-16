@@ -271,13 +271,11 @@ function setupPlayback(device_id, token)
 // Dark Mode Toggle
 function initDarkMode() {
   const darkModeToggle = document.getElementById('darkModeToggle');
-  const darkModeLabel = document.getElementById('darkModeLabel');
 
   // Load dark mode preference from localStorage
   const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
   if (isDarkMode) {
     document.body.classList.add('dark-mode');
-    darkModeLabel.textContent = 'Light Mode';
   }
 
   // Toggle dark mode on button click
@@ -288,10 +286,8 @@ function initDarkMode() {
       // Update localStorage
       if (document.body.classList.contains('dark-mode')) {
         localStorage.setItem('darkMode', 'enabled');
-        darkModeLabel.textContent = 'Light Mode';
       } else {
         localStorage.setItem('darkMode', 'disabled');
-        darkModeLabel.textContent = 'Dark Mode';
       }
     });
   }
