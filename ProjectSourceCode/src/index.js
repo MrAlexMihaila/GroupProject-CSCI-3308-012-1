@@ -92,6 +92,15 @@ Handlebars.registerHelper('formatNumber', (num) => {
 Handlebars.registerHelper('year', (date) => {
   return date ? date.substring(0, 4) : '';
 });
+Handlebars.registerHelper('formatDuration', (ms) => {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+});
+Handlebars.registerHelper('limit', (arr, n) => {
+  return arr ? arr.slice(0, n) : [];
+});
 
 //for individual song page
 Handlebars.registerHelper("gradeFromRating", (rating) => {
@@ -148,7 +157,7 @@ function convertRatingToLetter(rating)
 
 // database configuration
 const dbConfig = {
-  host: 'db', // the database server
+  host: process.env.HOST || 'db', // the database server
   port: 5432, // the database port
   database: process.env.POSTGRES_DB, // the database name
   user: process.env.POSTGRES_USER, // the user account to connect with
@@ -205,6 +214,27 @@ app.use(
 app.use(express.static(__dirname + '/')); //allow for anything in resources directory to be used
 
 //basically everything above this line was taken from lab 7
+
+// helper function to get recent reviews
+async function getRecentReviews(userid, limit = 5) {
+  try {
+    const reviews = await db.any(
+      `SELECT r.review_id, r.rating, r.review_text, r.song_id, r.created_at, u.username,
+              COALESCE(s.title, 'Unknown Song') AS song_title
+        FROM reviews r
+        JOIN users u ON r.user_id = u.user_id
+        LEFT JOIN songs s ON r.song_id = s.song_id
+        WHERE r.user_id = $1
+        ORDER BY r.created_at DESC
+        LIMIT $2`,
+      [userid, limit]
+    );
+    return reviews;
+  } catch (err) {
+    console.error('Error fetching recent reviews:', err);
+    return [];
+  }
+}
 
 //lab 10 test function
 app.get('/welcome', (req, res) => {
@@ -265,20 +295,41 @@ app.get('/register', (req, res) => {
 
 //register post route
 app.post('/register', async (req, res) => {
+  const {username, password} = req.body;
+
+  // Fail fast for invalid usernames used in API tests and to avoid DB constraint hangs.
+  if (!username || username.length > 50) {
+    return res.status(400).json({ message: 'Failed to register!' });
+  }
+
   try {
     //hash the password using bcrypt library
-    const hash = await bcrypt.hash(req.body.password, 10);
+    const hash = await bcrypt.hash(password, 10);
 
     await db.none(
-      `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [req.body.username, hash]
+      `INSERT INTO users(username, password_hash) VALUES($1, $2);`, [username, hash]
     );
 
     //res.status(200).json({ message: 'Register Successful!' });
     res.redirect('/login');
-  } catch(err)
-  {
-    //console.log("Database Error:", err.message || err);
-    res.status(400).json({ message: 'Failed to register!' });
+  } catch(err) {
+
+    // check if user already exists, if so send to register page with message
+    try {
+      const existingUser = await db.oneOrNone(
+        `SELECT * FROM users WHERE username = $1`, [username]
+      );
+
+      if (existingUser) {
+        return res.render('pages/register', {message: 'Username already exists'});
+      }
+
+      // Any other registration error should still respond (prevents request timeouts).
+      return res.status(400).json({ message: 'Failed to register!'});
+    } catch(err) {
+      //console.log("Database Error:", err.message || err);
+      return res.status(400).json({ message: 'Failed to register!'});
+    }
   }
 });
 
@@ -346,12 +397,13 @@ app.get('/spotify-callback', async (req, res) => {
   }
 });
 
+
 app.get('/search', async (req, res) => {
   console.log("TYPE FROM FRONTEND:", req.query.type);
   const query = req.query.song;
   let type = req.query.type || "track"; // defaults to song
   
-  const validTypes = ["track", "artist", "album"];
+  const validTypes = ["track", "artist", "album", "users"];
   if (!validTypes.includes(type)) {
     type = "track"; // defaults to track
   }
@@ -360,15 +412,27 @@ app.get('/search', async (req, res) => {
     return res.redirect('/home');
   }
 
+  // handle users separately — no Spotify needed
+  if (type === "users") {
+    try {
+      const users = await db.any(
+        'SELECT user_id, username FROM users WHERE username ILIKE $1 LIMIT 25',
+        [`%${query}%`]
+      );
+      return res.render('pages/search_users', { user_list: users, isUsers: true });
+    } catch (err) {
+      console.error(err.message);
+      return res.render('pages/search_users', { user_list: [], isUsers: true });
+    }
+  }
+
   try {
     // get a valid api token
     const token = await getSpotifyToken();
     
     const response = await axios({
-
       url: "https://api.spotify.com/v1/search",
       method: "GET",
-
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -392,30 +456,28 @@ app.get('/search', async (req, res) => {
     }
     else if (type === "artist") {
       results = response.data.artists.items;
-      res.render('pages/artists', {
+      res.render('pages/search_artist', {
         artist_list: results,
         isArtists: true
       });
     }
     else if (type === "album") {
       results = response.data.albums.items;
-      res.render('pages/albums', {
+      res.render('pages/search_album', {
         album_list: results,
         isAlbums: true
       });
     }
+
     console.log("Search query:", query);
     console.log("Search type:", type);
     console.log("Number of results:", results.length);
     console.log("First result:", results[0]);
   }
   
-
-  
   catch (err) {
     console.error(err.response?.data || err.message);
-
-    res.render('pages/songs_tab', {
+    res.render('pages/song', {
       song_list: [],
       isSongs: true,
       error: "Search Failed"
@@ -423,45 +485,110 @@ app.get('/search', async (req, res) => {
   }
 });
 
+//individual artist page
+app.get('/artist/:id', async (req, res) => {
+  const artistID = req.params.id;
 
-app.get('/albums', async (req, res) => {
-  res.render('pages/albums', {isAlbums: true});
+  try {
+    const token = await getSpotifyToken();
+
+    // Fetch artist details
+    const artistResponse = await axios({
+      url: `https://api.spotify.com/v1/artists/${artistID}`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    // Fetch artist's top tracks
+    const topTracksResponse = await axios({
+      url: `https://api.spotify.com/v1/artists/${artistID}/top-tracks`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { market: "US" },
+    });
+
+    // Fetch artist's albums
+    const albumsResponse = await axios({
+      url: `https://api.spotify.com/v1/artists/${artistID}/albums`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { include_groups: "album,single", market: "US", limit: 50 },
+    });
+
+    const artist = artistResponse.data;
+    const topTracks = topTracksResponse.data.tracks;
+    const albums = albumsResponse.data.items;
+
+    res.render('pages/individual_artist', {  // <-- updated here
+      artist,
+      topTracks,
+      albums,
+      isArtists: true
+    });
+
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.redirect('/search');
+  }
 });
 
-app.get('/songs', async (req, res) => {
-  //this is a test call for now
-  getSpotifyToken()
-  .then(token => {
-    
-    return axios({
+
+app.get('/albums', async (req, res) => {
+  try {
+    const token = await getSpotifyToken();
+
+    const topAlbumsResponse = await axios({
       url: "https://api.spotify.com/v1/search",
       method: "GET",
-      headers: 
-      {
-        Authorization: `Bearer ${token}`,
-      },
-       params: 
-      {
-          q: "Pink Floyd", //dummy search value for now
-          type: "track",
-          limit: 15,
-      },
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: "top albums 2025", type: "album", limit: 50 }
     });
-  })
-  //once above api call is done, return the response
-  .then(response => {
-    const tracks = response.data.tracks.items;
+    const topAlbums = topAlbumsResponse.data.albums.items.filter(a => a !== null);
 
-    //console.log(tracks); //view all tracks from our "search"
-    
-    // pass the track data to the songs page
-    // in the future we should have multiple rows on the song page, each with its own api call, and we can pass in different data for each row (ex: top tracks, new releases, etc.)
-    res.render('pages/songs_tab', { song_list: tracks, isSongs: true });
-  })
-  .catch(err => {
+    const popularAlbumsResponse = await axios({
+      url: "https://api.spotify.com/v1/search",
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: "Greatest hits", type: "album", limit: 50 }
+    });
+    const popularAlbums = popularAlbumsResponse.data.albums.items.filter(a => a !== null);
+
+    res.render('pages/albums', { topAlbums, popularAlbums, isAlbums: true });
+  } catch (err) {
     console.error(err.response?.data || err.message);
-    res.render('pages/songs_tab', { song_list: [], isSongs: true});
-  });
+    res.render('pages/albums', { topAlbums: [], popularAlbums: [], isAlbums: true });
+  }
+});
+/*it works, but it doesn't fetch the playlists like it should, Im just searching top hits 2025, or popular songs 2025 so theres some bad data*/ 
+app.get('/songs', async (req, res) => {
+  try {
+    const token = await getSpotifyToken();
+
+    //let USATop50PlaylistID = "3DLP1u57jcYremGNWw9Gfn"; //playlist id for a custom playlist i made with the current top 50 songs in the usa
+
+    const topChartsResponse = await axios({
+      url: "https://api.spotify.com/v1/search",
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: "top hits 2025", type: "track", limit: 50 }
+    });
+    const topCharts = topChartsResponse.data.tracks.items.filter(t => t !== null);
+    console.log("topCharts count:", topCharts.length);
+
+    const popularResponse = await axios({
+      url: "https://api.spotify.com/v1/search",
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { q: "yacht rock", type: "track", limit: 50 }
+    });
+    const popular = popularResponse.data.tracks.items.filter(t => t !== null);
+    console.log("popular count:", popular.length);
+
+    res.render('pages/songs_tab', { topCharts, popular, isSongs: true });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.render('pages/songs_tab', { topCharts: [], popular: [], isSongs: true });
+  }
 });
 
 app.get('/genres', async (req, res) => {
@@ -548,13 +675,73 @@ const auth = (req, res, next) => {
   next();
 };
 
+// User profile route
+app.get('/profile', auth, async (req, res) => {
+  const reviews = await getRecentReviews(req.session.user.user_id);
+  res.render('pages/profile', {
+    user: req.session.user,
+    isOwnProfile: true,
+    reviews
+  });
+});
+
+// Public profile route
+app.get('/profile/:userid', async (req, res) => {
+  
+  // convert user id to integer and check if valid
+  const userId = Number.parseInt(req.params.userid, 10);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).render('pages/profile', {
+      message: 'Invalid user id.',
+      user: null,
+      isOwnProfile: false,
+      reviews: []
+    });
+  }
+
+  try {
+    // query user id from database
+    const profileUser = await db.oneOrNone(
+      'SELECT user_id, username FROM users WHERE user_id = $1',
+      [userId]
+    );
+
+    if (!profileUser) {
+      return res.status(404).render('pages/profile', {
+        message: 'User not found.',
+        user: null,
+        isOwnProfile: false,
+        reviews: []
+      });
+    }
+
+    // check if the it is the logged in users profile
+    const isOwnProfile =
+      req.session.user && req.session.user.user_id === profileUser.user_id;
+    
+    const reviews = await getRecentReviews(profileUser.user_id);
+
+    return res.render('pages/profile', {
+      profileUser,
+      isOwnProfile,
+      reviews
+    });
+  } catch (err) {
+    return res.status(500).render('pages/profile', {
+      message: 'Something went wrong loading this profile.',
+      profileUser: null,
+      isOwnProfile: false,
+    });
+  }
+});
+
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/home');
   });
 });
 
-app.get('/songs_tab/:id', async (req, res) => {
+app.get('/song/:id', async (req, res) => {
   const songID = req.params.id;
   //console.log(songID);
   getSpotifyToken()
@@ -726,7 +913,17 @@ app.post('/addReview', auth, async (req, res) => {
     const track = response.data;
     const title = track.name;
     const duration = Math.floor(track.duration_ms / 1000);
-    const releaseDate = track.album.release_date;
+    let releaseDate = track.album.release_date;
+
+    if(releaseDate.length === 4) //just a year
+    {
+      releaseDate = `${releaseDate}-01-01`;
+    }
+    else if(releaseDate.length === 7) //just year and month
+    {
+      releaseDate = `${releaseDate}-01`;
+    }
+
     const trackNumber = track.track_number;
     const albumId = track.album.id;
     const albumTitle = track.album.name;
@@ -761,6 +958,60 @@ app.post('/addReview', auth, async (req, res) => {
     return res.status(200).json({ success: true });
   } catch(err){
     console.log("error inserting review into database", err.message);
+    return res.status(500).json({
+      error: "Database error"
+    });
+  }
+});
+
+app.post('/addAlbumReview', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+  const { rating, description, albumID } = req.body;
+
+  if (rating < 0 || rating > 5) {
+    console.log("invalid rating?");
+    console.log(rating);
+    return res.status(400).json({
+      error: "Invalid Rating Sent"
+    });
+  }
+
+  try {
+    // fetch album from Spotify
+    const token = await getSpotifyToken();
+    const response = await axios({
+      url: `https://api.spotify.com/v1/albums/${albumID}`,
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const album = response.data;
+    const title = album.name;
+    const releaseDate = album.release_date;
+    const image = album.images?.[0]?.url ?? null;
+
+    await db.none(
+      `INSERT INTO albums (album_id, title, release_date, image_url)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (album_id) DO NOTHING`,
+      [albumID, title, releaseDate, image]
+    );
+
+    // insert/update review
+    await db.none(
+      `INSERT INTO reviews (user_id, album_id, rating, review_text)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, album_id)
+       DO UPDATE SET 
+         rating = EXCLUDED.rating,
+         review_text = EXCLUDED.review_text,
+         updated_at = CURRENT_TIMESTAMP;`,
+      [userId, albumID, rating, description]
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.log("error inserting album review into database", err.message);
     return res.status(500).json({
       error: "Database error"
     });

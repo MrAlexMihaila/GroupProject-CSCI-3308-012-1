@@ -1,0 +1,68 @@
+<div class="container mt-4" style="max-width: 900px;">
+
+  <!-- Artist Header -->
+  <div class="text-center mb-5">
+    {{#if artist.images.[0].url}}
+      <img src="{{artist.images.[0].url}}" alt="{{artist.name}}"
+        class="rounded-circle mb-3 shadow"
+        style="width: 200px; height: 200px; object-fit: cover;">
+    {{else}}
+      <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto mb-3 shadow"
+        style="width: 200px; height: 200px; font-size: 3rem;">
+        ?
+      </div>
+    {{/if}}
+    <h1 class="fw-bold mb-1">{{artist.name}}</h1>
+    {{#if artist.followers.total}}
+      <p class="text-muted">{{formatNumber artist.followers.total}} followers</p>
+    {{/if}}
+    {{#if artist.genres.[0]}}
+      <div class="d-flex flex-wrap justify-content-center gap-2">
+        {{#each artist.genres}}
+          <span class="badge bg-secondary text-capitalize">{{this}}</span>
+        {{/each}}
+      </div>
+    {{/if}}
+  </div>
+
+  <!-- Top Tracks -->
+  <div class="mb-5">
+    <h4 class="fw-bold mb-3">Top Tracks</h4>
+    <div class="list-group shadow-sm">
+      {{#each (limit topTracks 5)}}
+        <a href="/song/{{this.id}}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+          <span class="text-muted fw-semibold" style="width: 20px; text-align: right;">{{add @index 1}}</span>
+          {{#if this.album.images.[0].url}}
+            <img src="{{this.album.images.[0].url}}" alt="{{this.album.name}}"
+              style="width: 48px; height: 48px; object-fit: cover; border-radius: 4px;">
+          {{/if}}
+          <div class="flex-grow-1 overflow-hidden">
+            <div class="fw-semibold text-truncate">{{this.name}}</div>
+            <div class="text-muted small text-truncate">{{this.album.name}}</div>
+          </div>
+          <span class="text-muted small">{{formatDuration this.duration_ms}}</span>
+        </a>
+      {{/each}}
+    </div>
+  </div>
+
+  <!-- Albums -->
+  <div class="mb-5">
+    <h4 class="fw-bold mb-3">Albums</h4>
+    <div class="row g-3">
+      {{#each albums}}
+        <a href="/albums_tab/{{this.id}}" class="col-6 col-md-3 text-decoration-none text-dark">
+          <div class="card border-0 shadow-sm h-100 text-center p-3">
+            {{#if this.images.[0].url}}
+              <img src="{{this.images.[0].url}}" alt="{{this.name}}"
+                class="rounded mb-2 w-100" style="object-fit: cover; aspect-ratio: 1;">
+            {{/if}}
+            <div class="fw-semibold small text-truncate">{{this.name}}</div>
+            <div class="text-muted small">{{year this.release_date}}</div>
+          </div>
+        </a>
+      {{/each}}
+    </div>
+  </div>
+
+</div>
