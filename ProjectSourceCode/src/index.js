@@ -157,7 +157,7 @@ function convertRatingToLetter(rating)
 
 // database configuration
 const dbConfig = {
-  host: 'db', // the database server
+  host: process.env.HOST || 'db', // the database server
   port: 5432, // the database port
   database: process.env.POSTGRES_DB, // the database name
   user: process.env.POSTGRES_USER, // the user account to connect with
@@ -346,7 +346,7 @@ app.get('/spotify-login', (req, res) => {
     response_type: "code",
     client_id: process.env.SPOTIFY_CLIENT_ID,
     scope: scope,
-    redirect_uri: "http://127.0.0.1:3000/spotify-callback",
+    redirect_uri: process.env.REDIRECT_URI || "http://127.0.0.1:3000/spotify-callback",
     state: state
   });
 
@@ -382,7 +382,7 @@ app.get('/spotify-callback', async (req, res) => {
       data: new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: "http://127.0.0.1:3000/spotify-callback",
+        redirect_uri: process.env.REDIRECT_URI || "http://127.0.0.1:3000/spotify-callback",
       }).toString(),
     });
 
