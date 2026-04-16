@@ -205,3 +205,90 @@
     max-width: 700px;
   }
 }
+
+/* Dark Mode Styles */
+body.dark-mode {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+body.dark-mode .bg-light {
+  background-color: #2d2d2d !important;
+}
+
+body.dark-mode .nav-link {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .nav-pills .nav-link.active,
+body.dark-mode .nav-pills .show > .nav-link {
+  background-color: #555;
+  color: #fff;
+}
+
+body.dark-mode main {
+  background-color: #1a1a1a;
+}
+
+body.dark-mode .card,
+body.dark-mode .artist-card,
+body.dark-mode .album-card,
+body.dark-mode .song-card {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .form-control,
+body.dark-mode .form-select,
+body.dark-mode input {
+  background-color: #333;
+  color: #e0e0e0;
+  border-color: #555;
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus,
+body.dark-mode input:focus {
+  background-color: #333;
+  color: #e0e0e0;
+  border-color: #666;
+  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .input-group-text {
+  background-color: #333;
+  color: #e0e0e0;
+  border-color: #555;
+}
+
+body.dark-mode .dropdown-item {
+  color: #e0e0e0;
+}
+
+body.dark-mode .dropdown-item:hover {
+  background-color: #444;
+}
+
+body.dark-mode #profileMenu {
+  background-color: #2d2d2d;
+}
+
+body.dark-mode table {
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode .btn-outline-dark {
+  color: #e0e0e0;
+  border-color: #666;
+}
+
+body.dark-mode .btn-outline-dark:hover {
+  background-color: #444;
+  border-color: #777;
+}
