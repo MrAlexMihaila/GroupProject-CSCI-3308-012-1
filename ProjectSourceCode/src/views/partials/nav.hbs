@@ -17,6 +17,7 @@
       <option value="track">Tracks</option>
       <option value="artist">Artists</option>
       <option value="album">Albums</option>
+      <option value="users">Users</option>
     </select>
 
     <!-- SEARCH ICON -->
@@ -63,19 +64,65 @@
     </a>
   </li>
 </ul>
-      <div class="d-grid gap-2">
-        {{#if user}}
-          {{#if userLoggedIntoSpotify}}
-            <a class="btn btn-success rounded-0" roll="button">Connected With Spotify</a>
-          {{else}}
-            <a class="btn btn-outline-success rounded-0" href="/spotify-login" roll="button">Connect With Spotify</a>
-          {{/if}}
-          <a class="btn btn-outline-danger rounded-0" href="/logout" role="button">Logout</a>
-        {{else}}
+      {{#if user}}
+        <div class="profile-card" style="position: relative;">
+          <div id="profileMenu" style="display: none; position: absolute; bottom: 100%; left: 0; right: 0; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-bottom: 8px;">
+            {{#if userLoggedIntoSpotify}}
+              <a class="dropdown-item" roll="button">
+                <i class="bi bi-person"></i>Connected With Spotify
+              </a>
+            {{else}}
+              <a class="dropdown-item" href="/spotify-login" roll="button">
+                <i class="bi bi-person"></i>Connect With Spotify
+              </a>
+            {{/if}}
+            
+            <a href="/profile" class="dropdown-item">
+              <i class="bi bi-person"></i> Profile
+            </a>
+            <a href="/logout" class="dropdown-item dropdown-item-logout">
+              <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+          </div>
+          
+          <button 
+            class="btn d-flex align-items-center gap-2 p-2" 
+            style="background: none; border: none; cursor: pointer; width: 100%; justify-content: flex-start;"
+            onclick="toggleProfileMenu()"
+          >
+            <img 
+              src="/resources/img/default-profile.png" 
+              alt="Profile" 
+              class="profile-pic" 
+              style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;"
+            >
+            <span class="text-dark" style="word-break: break-word; font-weight: 600; font-size: 18px; text-align: left; margin-left: 8px;">{{user.username}}</span>
+          </button>
+        </div>
+      {{else}}
+        <div class="d-grid gap-2">
           <a class="btn btn-outline-primary rounded-0" href="/login" role="button">Log In</a>
           <a class="btn btn-primary rounded-0" href="/register" role="button">Sign Up Free</a>
-        {{/if}}
-      </div>
-    <hr>
-  </div>
-</header>
+        </div>
+      {{/if}}
+    </header>
+    
+    <!-- JavaScript to handle profile menu toggle and outside click -->
+    <script>
+      function toggleProfileMenu() {
+        const menu = document.getElementById('profileMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+      }
+      
+      // Close menu when clicking outside
+      document.addEventListener('click', function(event) {
+        const profileCard = document.querySelector('.profile-card');
+        const menu = document.getElementById('profileMenu');
+        
+        if (profileCard && !profileCard.contains(event.target)) {
+          if (menu) {
+            menu.style.display = 'none';
+          }
+        }
+      });
+    </script>

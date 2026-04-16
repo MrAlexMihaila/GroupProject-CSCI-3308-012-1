@@ -3,3 +3,4 @@ node_modules/
 *:Zone.Identifier
 package-lock.json
 package.json
+init_db.sh
