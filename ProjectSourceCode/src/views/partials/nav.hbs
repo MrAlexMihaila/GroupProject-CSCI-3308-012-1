@@ -13,7 +13,7 @@
   <div class="input-group">
 
     <!-- DROPDOWN -->
-    <select name="type" class="form-select px-2" style="max-width: 90px; background-color: #dee2e6" >
+    <select name="type" class="form-select px-2 search-dropdown" style="max-width: 90px;">
       <option value="track">Tracks</option>
       <option value="artist">Artists</option>
       <option value="album">Albums</option>
@@ -21,7 +21,7 @@
     </select>
 
     <!-- SEARCH ICON -->
-    <span class="input-group-text bg-white border-start-0 border-end-0">
+    <span class="input-group-text search-icon border-start-0 border-end-0">
       <i class="bi bi-search"></i>
     </span>
 
@@ -71,7 +71,7 @@
 </div>
       {{#if user}}
         <div class="profile-card" style="position: relative;">
-          <div id="profileMenu" style="display: none; position: absolute; bottom: 100%; left: 0; right: 0; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-bottom: 8px;">
+          <div id="profileMenu" style="display: none; position: absolute; bottom: 100%; left: 0; right: 0; z-index: 1000; margin-bottom: 8px;" class="profile-menu-dropdown">
             {{#if userLoggedIntoSpotify}}
               <a class="dropdown-item" roll="button">
                 <i class="bi bi-person"></i>Connected With Spotify
