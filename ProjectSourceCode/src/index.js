@@ -614,7 +614,78 @@ app.get('/songs', async (req, res) => {
 });
 
 app.get('/genres', async (req, res) => {
-  res.render('pages/genres', {isGenres: true});
+  const search = req.query.search ? req.query.search.trim() : '';
+
+  if (!search) {
+    return res.render('pages/genres', { isGenres: true, search });
+  }
+
+  try {
+    const token = await getSpotifyToken();
+
+    // Search for artists by genre
+    const searchResponse = await axios({
+      url: 'https://api.spotify.com/v1/search',
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params: {
+        q: `genre:"${search}"`,
+        type: 'artist',
+        limit: 10, 
+      },
+    });
+
+    const artists = searchResponse.data.artists.items;
+
+    if (artists.length === 0) {
+      return res.render('pages/genres', { isGenres: true, search, songs: [] });
+    }
+
+    const songsPromises = artists.map(async (artist) => {
+      try {
+        const tracksResponse = await axios({
+          url: `https://api.spotify.com/v1/artists/${artist.id}/top-tracks`,
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            market: 'US',
+          },
+        });
+        return tracksResponse.data.tracks.slice(0, 5);
+      } catch (err) {
+        console.error(`Error getting top tracks for artist ${artist.id}:`, err.message);
+        return [];
+      }
+    });
+
+    const songsArrays = await Promise.all(songsPromises);
+    const songs = songsArrays.flat();
+
+    // Remove duplicates and choose the top 10 songs by popularity
+    const uniqueSongs = songs
+      .filter((song, index, self) => index === self.findIndex(s => s.id === song.id))
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+      .slice(0, 10);
+
+    res.render('pages/genres', {
+      isGenres: true,
+      search,
+      artists,
+      songs: uniqueSongs,
+    });
+  } catch (err) {
+    console.error('Error fetching genres:', err.response?.data || err.message);
+    res.render('pages/genres', {
+      isGenres: true,
+      search,
+      artists: [],
+      songs: [],
+    });
+  }
 });
 
 //Authentication Middleware, from lab 7 (again)
