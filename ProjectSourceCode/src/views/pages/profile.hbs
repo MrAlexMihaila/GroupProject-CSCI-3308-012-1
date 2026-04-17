@@ -5,23 +5,54 @@
     <div class="alert alert-warning" role="alert">{{message}}</div>
   {{/if}}
 
+  <!-- Profile Section -->
   <div class="row g-4 align-items-start">
     <div class="col-12 col-lg-4">
       <div class="card profile-user-card">
         <div class="card-body text-center">
+          
+          <!-- Profile Picture and Info -->
           <img
             src="/resources/img/default-profile.png"
             alt="Profile Picture"
             class="rounded-circle mb-3 profile-avatar"
           >
-          <h3 class="mb-1">{{#if user}}{{user.username}}{{else}}Unknown User{{/if}}</h3>
+          <h3 class="mb-1">{{#if profileUser}}{{profileUser.username}}{{else}}Unknown User{{/if}}</h3>
+
+          <!-- Friend Count -->
+          <p class="text-muted mb-0">{{friendCount}} friends</p>
+
           {{#if isOwnProfile}}
             <p class="text-muted mb-0">This is your profile.</p>
+          
+          <!-- Display friend status !-->
+          {{else if profileUser}}
+
+            <!-- Only show if user is logged in -->
+            {{# if user}}
+              {{#if isFriend}}
+                <p class="text-muted mb-0">You and {{profileUser.username}} are friends.</p>
+
+              {{else if isPending}}
+                <p class="btn btn-outline-primary mt-3 mb-0">Following</p>
+
+              {{else}}
+                <!-- Form to send friend request -->
+                <form method="POST" action="/friends/add" class="mt-3">
+                  <input type="hidden" name="userId" value="{{profileUser.user_id}}">
+                  <input type="hidden" name="followedId" value="{{profileUser.user_id}}">
+                  <button type="submit" class="btn btn-primary">Follow</button>
+                </form>
+              {{/if}}
+
+            {{/if}}
+
           {{/if}}
         </div>
       </div>
     </div>
 
+    <!-- Reviews Section -->
     <div class="col-12 col-lg-8">
       <div class="card profile-reviews-card">
         <div class="card-body">
@@ -30,13 +61,27 @@
           {{#if reviews.length}}
           
             {{#each reviews}}
-              <div class="card mb-3 profile-review-card">
-                <div class="card-body">
-                  <h5 class="card-title">{{this.song_title}}</h5>
-                  <p class="card-text">{{this.review_text}}</p>
-                  <p class="card-text"><small class="text-muted">Rating: {{this.rating}}/5</small></p>
+              <a href="/song/{{this.song_id}}" class="text-decoration-none text-reset d-block">
+                <div class="card mb-3 profile-review-card">
+                  <div class="card-body">
+                    <div class="d-flex gap-3 align-items-stretch">
+                      <div class="rounded overflow-hidden" style="width: 90px; min-width: 90px;">
+                        <img
+                          src="{{this.image_url}}"
+                          alt="{{this.song_title}} artwork"
+                          class="w-100 h-100"
+                          style="object-fit: cover;"
+                        >
+                      </div>
+                      <div>
+                        <h5 class="card-title">{{this.song_title}}</h5>
+                        <p class="card-text">{{this.review_text}}</p>
+                        <p class="card-text"><small class="text-muted">Rating: {{gradeFromRating this.rating}}</small></p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </a>
             {{/each}}
 
           {{else}}

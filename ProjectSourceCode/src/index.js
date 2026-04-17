@@ -159,6 +159,77 @@ function convertRatingToLetter(rating)
     }
 }
 
+// helper function to get recent reviews
+async function getRecentReviews(userid, limit = 5) {
+  try {
+    const reviews = await db.any(
+      `SELECT r.review_id, r.rating, r.review_text, r.song_id, r.created_at, u.username,
+              s.song_id, COALESCE(s.title, 'Unknown Song') AS song_title, a.image_url
+        FROM reviews r
+        JOIN users u ON r.user_id = u.user_id
+        LEFT JOIN songs s ON r.song_id = s.song_id
+        LEFT JOIN albums a ON s.album_id = a.album_id
+        WHERE r.user_id = $1
+        ORDER BY r.created_at DESC
+        LIMIT $2`,
+      [userid, limit]
+    );
+    return reviews;
+  } catch (err) {
+    console.error('Error fetching recent reviews:', err);
+    return [];
+  }
+}
+
+// helper to get friend count
+async function getFriendCount(userid) {
+  try {
+    const result = await db.one(
+      `SELECT COUNT(*) AS friend_count
+        FROM follows f WHERE f.following_user_id = $1
+        AND EXISTS (
+          SELECT 1
+          FROM follows r
+          WHERE r.following_user_id = f.followed_user_id
+          AND r.followed_user_id = $1
+        );`,
+      [userid])
+      return Number(result.friend_count) || 0;
+      
+  } catch (err) {
+    console.error('Error fetching friend count:', err);
+    return 0;
+  }
+}
+
+// helper to check if two users are friends
+async function checkIfFriends(userId1, userId2) {
+  const isFriend = await db.oneOrNone(
+    `SELECT 1 AS friend_count
+      FROM follows f WHERE f.following_user_id = $1 AND f.followed_user_id = $2
+      AND EXISTS (
+        SELECT 1
+        FROM follows r
+        WHERE r.following_user_id = f.followed_user_id AND r.followed_user_id = $1
+      );`,
+    [userId1, userId2]
+  );
+
+  return Boolean(isFriend);
+}
+
+// helper to check if there is a pending friend request between two users
+// should come after an isFriend check
+async function checkIfPending(userId1, userId2) {
+  const isPending = await db.oneOrNone(
+    `SELECT 1 AS friend_count
+      FROM follows f WHERE f.following_user_id = $1 AND f.followed_user_id = $2;`,
+    [userId1, userId2]
+  );
+
+  return Boolean(isPending);
+}
+
 // database configuration
 const dbConfig = {
   host: process.env.HOST || 'db', // the database server
@@ -218,27 +289,6 @@ app.use(
 app.use(express.static(__dirname + '/')); //allow for anything in resources directory to be used
 
 //basically everything above this line was taken from lab 7
-
-// helper function to get recent reviews
-async function getRecentReviews(userid, limit = 5) {
-  try {
-    const reviews = await db.any(
-      `SELECT r.review_id, r.rating, r.review_text, r.song_id, r.created_at, u.username,
-              COALESCE(s.title, 'Unknown Song') AS song_title
-        FROM reviews r
-        JOIN users u ON r.user_id = u.user_id
-        LEFT JOIN songs s ON r.song_id = s.song_id
-        WHERE r.user_id = $1
-        ORDER BY r.created_at DESC
-        LIMIT $2`,
-      [userid, limit]
-    );
-    return reviews;
-  } catch (err) {
-    console.error('Error fetching recent reviews:', err);
-    return [];
-  }
-}
 
 //lab 10 test function
 app.get('/welcome', (req, res) => {
@@ -697,13 +747,16 @@ const auth = (req, res, next) => {
   next();
 };
 
-// User profile route
+// Logged in user profile route
 app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
+  const friendCount = await getFriendCount(req.session.user.user_id);
   res.render('pages/profile', {
     user: req.session.user,
+    profileUser: req.session.user,
     isOwnProfile: true,
-    reviews
+    reviews,
+    friendCount
   });
 });
 
@@ -714,10 +767,12 @@ app.get('/profile/:userid', async (req, res) => {
   const userId = Number.parseInt(req.params.userid, 10);
   if (!Number.isInteger(userId) || userId <= 0) {
     return res.status(400).render('pages/profile', {
+      user: req.session.user,
       message: 'Invalid user id.',
-      user: null,
+      profileUser: null,
       isOwnProfile: false,
-      reviews: []
+      reviews: [],
+      friendCount: 0
     });
   }
 
@@ -728,31 +783,68 @@ app.get('/profile/:userid', async (req, res) => {
       [userId]
     );
 
+    console.log("profileUser:", profileUser);
+
+    // user not found
     if (!profileUser) {
       return res.status(404).render('pages/profile', {
+        user: req.session.user,
         message: 'User not found.',
-        user: null,
+        profileUser: null,
         isOwnProfile: false,
-        reviews: []
+        reviews: [],
+        friendCount: 0
       });
     }
 
-    // check if the it is the logged in users profile
+    // check if the it is the logged in users profile and redirect to /profile
     const isOwnProfile =
       req.session.user && req.session.user.user_id === profileUser.user_id;
+    if (isOwnProfile) {
+      return res.redirect('/profile');
+    }
     
+    // get the most recent reviews
     const reviews = await getRecentReviews(profileUser.user_id);
 
+    // get the friend count
+    const friendCount = await getFriendCount(profileUser.user_id);
+
+    const viewerUserId = req.session.user?.user_id || null;
+
+    // check if users are friends
+    const isFriend = await checkIfFriends(viewerUserId, profileUser.user_id);
+    console.log("isFriend:", isFriend);
+    console.log("got here 2");
+
+    // check for pending status
+    let isPending = false;
+    if (!isFriend) {
+      isPending = await checkIfPending(viewerUserId, profileUser.user_id);
+      console.log("isPending:", isPending);
+    }
+    console.log("got here 3");
+
+    // render profile page
     return res.render('pages/profile', {
-      profileUser,
-      isOwnProfile,
-      reviews
+        user: req.session.user,
+        profileUser: profileUser,
+        isOwnProfile,
+        reviews: reviews,
+        friendCount: friendCount,
+        isFriend,
+        isPending
     });
+  
+  // catch any unexpected errors
   } catch (err) {
     return res.status(500).render('pages/profile', {
+      user: req.session.user,
       message: 'Something went wrong loading this profile.',
       profileUser: null,
       isOwnProfile: false,
+      reviews: [],
+      friendCount: 0,
     });
   }
 });
@@ -1141,33 +1233,84 @@ app.get('/friends', auth, async (req, res) => {
   const currentUserId = req.session.user?.user_id;
 
   try {
-    const query = `
-      SELECT user_id, username, DATE(created_at) AS created_at, COALESCE(user_image_url, '/resources/img/default-profile.png') AS user_image_url,
-             (SELECT COUNT(*) FROM follows WHERE followed_user_id = users.user_id) AS followers_count
-      FROM users
-      WHERE username ILIKE $1 AND user_id <> $2
-      ORDER BY username ASC
+    const values = [currentUserId || 0, `%${search}%`];
+
+    const friendsFirstQuery = `
+      -- determine relationship status with each user
+      -- relationship_rank orders friends first, then first-degree, then others
+      WITH relationship AS (
+        SELECT u.user_id,
+          EXISTS (
+            SELECT 1
+            FROM follows f
+            WHERE f.following_user_id = $1 AND f.followed_user_id = u.user_id
+          ) AS is_following,
+          EXISTS (
+            SELECT 1
+            FROM follows f
+            WHERE f.following_user_id = u.user_id AND f.followed_user_id = $1
+          ) AS follows_you
+        FROM users u
+        WHERE u.user_id <> $1
+      ),
+
+      -- get friend count from mutual follows
+      friend_totals AS (
+        SELECT
+          u.user_id,
+          COUNT(*)::int AS friend_count
+        FROM users u
+        JOIN follows f ON f.following_user_id = u.user_id
+        WHERE EXISTS (
+          SELECT 1
+          FROM follows r
+          WHERE r.following_user_id = f.followed_user_id
+            AND r.followed_user_id = u.user_id
+        )
+        GROUP BY u.user_id
+      ),
+
+      -- get follower totals
+      follower_totals AS (
+        SELECT
+          f.followed_user_id AS user_id,
+          COUNT(*)::int AS follower_count
+        FROM follows f
+        GROUP BY f.followed_user_id
+      )
+
+      -- create a list for handlebars
+      SELECT
+        u.user_id,
+        u.username,
+        COALESCE(TO_CHAR(u.created_at::date, 'Mon DD YYYY'), '') AS created_at, -- formatted join date
+        COALESCE(u.user_image_url, '/resources/img/default-profile.png') AS user_image_url, -- avatar fallback
+        COALESCE(ft.friend_count, 0) AS friend_count,
+        COALESCE(fot.follower_count, 0) AS follower_count,
+        rel.is_following AS "isFollowing", -- you follow them
+        (rel.is_following AND rel.follows_you) AS "isFriend", -- mutual followers
+        CASE
+          WHEN rel.is_following AND rel.follows_you THEN 0
+          WHEN rel.is_following OR rel.follows_you THEN 1
+          ELSE 2
+        END AS relationship_rank -- friends, first-degree, then others
+      FROM users u
+      JOIN relationship rel ON rel.user_id = u.user_id
+      LEFT JOIN friend_totals ft ON ft.user_id = u.user_id
+      LEFT JOIN follower_totals fot ON fot.user_id = u.user_id
+      WHERE u.username ILIKE $2
+      ORDER BY relationship_rank ASC, u.username ASC -- each group sorted A-Z
       LIMIT 20
     `;
 
-    // The value includes the wildcards
-    const values = [`%${search}%`, currentUserId || 0];
-
-    const users = await db.any(query, values);
-
-    const followQuery = `
-      SELECT followed_user_id
-      FROM follows
-      WHERE following_user_id = $1
-    `;
-
-    const followedRows = await db.any(followQuery, [currentUserId || 0]);
-    const followedIds = new Set(followedRows.map((row) => row.followed_user_id));
+    const users = await db.any(friendsFirstQuery, values);
 
     const usersDisplay = users.map((u) => ({
       ...u,
-      created_at: u.created_at,
-      isFollowing: followedIds.has(u.user_id),
+      friend_count: Number(u.friend_count) || 0,
+      follower_count: Number(u.follower_count) || 0,
+      isFollowing: Boolean(u.isFollowing),
+      isFriend: Boolean(u.isFriend),
     }));
 
     res.render('pages/friends', {
@@ -1189,7 +1332,7 @@ app.get('/friends', auth, async (req, res) => {
 
 app.post('/friends/add', async (req, res) => {
   const currentUserId = req.session.user?.user_id;
-  const { userId } = req.body;
+  const { userId, followedId } = req.body;
 
   if (!currentUserId) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -1205,6 +1348,10 @@ app.post('/friends/add', async (req, res) => {
        ON CONFLICT DO NOTHING`,
       [currentUserId, userId]
     );
+
+    if (followedId) {
+      return res.redirect('/profile/' + encodeURIComponent(followedId));
+    }
 
     res.redirect('/friends?search=' + encodeURIComponent(req.body.search || ''));
   } catch (err) {

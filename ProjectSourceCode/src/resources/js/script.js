@@ -352,3 +352,21 @@ function setupPlayback(device_id, token)
         console.error("Playback error:", err);
     });
 }
+
+// Handles profile menu clicking and toggling
+function toggleProfileMenu() {
+    const menu = document.getElementById('profileMenu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Close menu when clicking outside
+    document.addEventListener('click', function(event) {
+    const profileCard = document.querySelector('.profile-card');
+    const menu = document.getElementById('profileMenu');
+
+    if (profileCard && !profileCard.contains(event.target)) {
+        if (menu) {
+        menu.style.display = 'none';
+        }
+    }
+});
