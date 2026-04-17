@@ -25,6 +25,54 @@
   border-color: #ced4da;
 }
 
+.genre-header-bar {
+  position: fixed;
+  top: 0;
+  left: 280px;
+  width: calc(100% - 280px);
+  z-index: 1020;
+  padding: 1rem 1rem 0.75rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.genre-header-bar h2 {
+  font-size: 1.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.genre-header-copy {
+  color: #6b7280;
+  font-size: 0.98rem;
+}
+
+.genre-search-form .form-control {
+  min-width: 220px;
+  border-radius: 0.6rem;
+  border: 1px solid #ced4da;
+}
+
+.genre-search-form .btn {
+  border-radius: 0.6rem;
+  padding: 0.75rem 1.1rem;
+}
+
+.genre-page-body {
+  padding-top: 95px;
+}
+
+.genre-section-header {
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+}
+
+.genre-section-header h3 {
+  font-size: 1.3rem;
+  margin: 0;
+  color: #111827;
+}
+
 /*give nav bar some space between elements*/
 .navbar-form {
   margin-bottom: 12px;
@@ -119,29 +167,44 @@
   transform: translateY(-6px);
   box-shadow: 0 12px 25px rgba(0,0,0,0.15);
 }
-/* for the row scroll*/
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+/* for the row scroll */
 .row-scroll {
-    display: flex;
-    gap: 1rem;
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-    -webkit-overflow-scrolling: touch;
-  }
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  margin-left: 10px;
+  scrollbar-width: none;
+}
 
-  .row-scroll .col-2-4 {
-    flex: 0 0 auto;
-  }
+.row-scroll::-webkit-scrollbar {
+  display: none;
+}
 
-  .row-1 .col-2-4:nth-child(n+16),
-  .row-2 .col-2-4:nth-child(-n+15),
-  .row-2 .col-2-4:nth-child(n+31),
-  .row-3 .col-2-4:nth-child(-n+30) {
-    display: none;
-  }
+.row-scroll .col-2-4 {
+  flex: 0 0 auto;
+}
 
-  .row-2 .col-2-4:nth-child(n+16):nth-child(-n+30) {
-    display: block;
-  }
+.row-1 .col-2-4:nth-child(n+16),
+.row-2 .col-2-4:nth-child(-n+15),
+.row-2 .col-2-4:nth-child(n+31),
+.row-3 .col-2-4:nth-child(-n+30) {
+  display: none;
+}
+
+.row-2 .col-2-4:nth-child(n+16):nth-child(-n+30) {
+  display: block;
+}
 
   .row-3 .col-2-4:nth-child(n+31):nth-child(-n+45) {
     display: block;
@@ -526,4 +589,18 @@ body.dark-mode .navbar-form .form-control::placeholder {
 /* Small text to white */
 body.dark-mode small {
   color: #b0b0b0;
+.row-3 .col-2-4:nth-child(n+31):nth-child(-n+45) {
+  display: block;
+}
+
+#player-ui {
+    backdrop-filter: blur(6px);
+}
+
+button.rounded-circle {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
