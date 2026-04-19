@@ -856,19 +856,69 @@ app.get('/logout', (req, res) => {
 
 app.get('/song/:id', async (req, res) => {
   const songID = req.params.id;
-  //console.log(songID);
-  getSpotifyToken()
-  .then(token => {
-    return axios({
-      url: `https://api.spotify.com/v1/tracks/${songID}`,
-      method: "GET",
-      headers: 
-      {
-        Authorization: `Bearer ${token}`,
-      },
+  
+  //attempt to get local song first before anything else
+  const localSong = await db.oneOrNone(
+    `SELECT s.*, a.title AS album_title, a.image_url
+    FROM songs s
+    LEFT JOIN albums a ON s.album_id = a.album_id
+    WHERE s.song_id = $1`,
+    [songID]
+  );
+
+  let songPromise;
+
+  if(localSong)
+  {
+    const artists = await db.any(
+      `SELECT ar.name, ar.artist_id
+      FROM songs_to_artists sa
+      JOIN artists ar ON sa.artist_id = ar.artist_id
+      WHERE sa.song_id = $1`,
+      [songID]
+    );
+
+    //console.log("using local data");
+    songPromise = getSpotifyToken()
+    .then(token => {
+      return axios({
+        url: `https://api.spotify.com/v1/tracks/${songID}`,
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    })
+    .then(response => {
+      return {
+        data: {
+          name: localSong.title,
+          artists: artists,
+          album: {
+            images: localSong.image_url ? [{ url: localSong.image_url }] : []
+          },
+          uri: response.data.uri,
+          duration_ms: (localSong.duration || 0) * 1000
+        }
+      };
     });
-  })
-  .then(async response => {
+  }
+  else
+  {
+    //console.log("not using local data");
+    songPromise = getSpotifyToken()
+      .then(token => {
+        return axios({
+          url: `https://api.spotify.com/v1/tracks/${songID}`,
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      });
+  }
+
+  songPromise.then(async response => {
     const songName = response.data.name;
     const artistsArray = response.data.artists;
     const songAlbumImage = response.data.album.images;

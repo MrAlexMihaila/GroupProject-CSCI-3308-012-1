@@ -280,6 +280,8 @@ setInterval(async () => {
 
     document.getElementById("seek-bar").value = percent;
 
+    document.getElementById("seek-bar").style.background = `linear-gradient(to right, #6f42c1 0%, #6f42c1 ${percent}%, #e9ecef ${percent}%, #e9ecef 100%)`;
+
     const seconds = Math.floor(position / 1000);
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
