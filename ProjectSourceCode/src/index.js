@@ -442,7 +442,7 @@ app.get('/spotify-callback', async (req, res) => {
 
     req.session.spotifyAccessToken = response.data.access_token;
 
-    console.log("Connected with Spotify!");
+    //console.log("Connected with Spotify!");
 
     res.redirect('/home');
   }catch (err) {
@@ -451,9 +451,8 @@ app.get('/spotify-callback', async (req, res) => {
   }
 });
 
-
 app.get('/search', async (req, res) => {
-  console.log("TYPE FROM FRONTEND:", req.query.type);
+  //console.log("TYPE FROM FRONTEND:", req.query.type);
   const query = req.query.song;
   let type = req.query.type || "track"; // defaults to song
   
@@ -523,10 +522,10 @@ app.get('/search', async (req, res) => {
       });
     }
 
-    console.log("Search query:", query);
-    console.log("Search type:", type);
-    console.log("Number of results:", results.length);
-    console.log("First result:", results[0]);
+    //console.log("Search query:", query);
+    //console.log("Search type:", type);
+    //console.log("Number of results:", results.length);
+    //console.log("First result:", results[0]);
   }
   
   catch (err) {
@@ -632,7 +631,7 @@ app.get('/songs', async (req, res) => {
     const topCharts = top50Response.data.items
       .map(item => item.track)
       .filter(t => t !== null);
-    console.log("top charts count:", topCharts.length);
+    //console.log("top charts count:", topCharts.length);
 
     const popularResponse = await axios({
       url: "https://api.spotify.com/v1/playlists/1ti3v0lLrJ4KhSTuxt4loZ/tracks", // classic rock playlist
@@ -644,7 +643,7 @@ app.get('/songs', async (req, res) => {
     const popular = popularResponse.data.items
       .map(item => item.track)
       .filter(t => t !== null);
-    console.log("popular count:", popular.length);
+    //console.log("popular count:", popular.length);
 /*
     const popularResponse = await axios({
       url: "https://api.spotify.com/v1/search",
@@ -783,7 +782,7 @@ app.get('/profile/:userid', async (req, res) => {
       [userId]
     );
 
-    console.log("profileUser:", profileUser);
+    //console.log("profileUser:", profileUser);
 
     // user not found
     if (!profileUser) {
@@ -814,16 +813,16 @@ app.get('/profile/:userid', async (req, res) => {
 
     // check if users are friends
     const isFriend = await checkIfFriends(viewerUserId, profileUser.user_id);
-    console.log("isFriend:", isFriend);
-    console.log("got here 2");
+    //console.log("isFriend:", isFriend);
+    //console.log("got here 2");
 
     // check for pending status
     let isPending = false;
     if (!isFriend) {
       isPending = await checkIfPending(viewerUserId, profileUser.user_id);
-      console.log("isPending:", isPending);
+      //console.log("isPending:", isPending);
     }
-    console.log("got here 3");
+    //console.log("got here 3");
 
     // render profile page
     return res.render('pages/profile', {
@@ -1003,7 +1002,6 @@ app.get('/albums_tab/:id', async (req, res) => {
     //will just pass a dummy value for now
     let albumRating = 3.0; //out of 5 "stars"
     
-
     res.render('pages/album', {
       name: albumName,
       artists: artistsArray,
@@ -1020,14 +1018,12 @@ app.get('/albums_tab/:id', async (req, res) => {
   }
 });
 
-
 app.post('/addReview', auth, async (req, res) => {
   const userId = req.session.user.user_id;
   const {rating, description, songID} = req.body;
   if(rating < 0 || rating > 5) //somehow got invalid request
   {
-    console.log("invalid rating?");
-    console.log(rating);
+    console.log("invalid rating?" + rating);
     return res.status(400).json({
       error: "Invalid Rating Sent"
     });
@@ -1364,8 +1360,6 @@ app.post('/friends/add', async (req, res) => {
     });
   }
 });
-
-
 
 //starting server, do not delete or modify the next two lines
 const server = app.listen(3000);

@@ -282,3 +282,67 @@ button.rounded-circle {
     align-items: center;
     justify-content: center;
 }
+
+.player-container {
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    transition: transform 0.3s ease;
+}
+
+.play-btn {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.play-btn:hover {
+    transform: scale(1.1);
+    background-color: #000;
+}
+
+.custom-range {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+}
+
+.custom-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #198754;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: 0.2s;
+}
+
+.custom-range::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+}
+
+.custom-range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: #198754;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    cursor: pointer;
+}
+
+.extra-small {
+    font-size: 0.75rem;
+}
+
+.tracking-wider {
+    letter-spacing: 1px;
+}
+}
