@@ -198,6 +198,20 @@ async function getFriendCount(userid) {
   }
 }
 
+// helper to get follower count
+async function getFollowerCount(userid) {
+  try {
+    const result = await db.one(
+      `SELECT COUNT(*) AS follower_count
+        FROM follows f WHERE f.followed_user_id = $1;`,
+      [userid])
+      return Number(result.follower_count) || 0;
+  } catch (err) {
+    console.error('Error fetching follower count:', err);
+    return 0;
+  }
+}
+
 // helper to check if two users are friends
 async function checkIfFriends(userId1, userId2) {
   const isFriend = await db.oneOrNone(
@@ -646,12 +660,14 @@ const auth = (req, res, next) => {
 app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
   const friendCount = await getFriendCount(req.session.user.user_id);
+  const followerCount = await getFollowerCount(req.session.user.user_id);
   res.render('pages/profile', {
     user: req.session.user,
     profileUser: req.session.user,
     isOwnProfile: true,
     reviews,
-    friendCount
+    friendCount,
+    followerCount
   });
 });
 
@@ -660,6 +676,7 @@ app.get('/profile/:userid', async (req, res) => {
   
   // convert user id to integer and check if valid
   const userId = Number.parseInt(req.params.userid, 10);
+
   if (!Number.isInteger(userId) || userId <= 0) {
     return res.status(400).render('pages/profile', {
       user: req.session.user,
@@ -702,6 +719,9 @@ app.get('/profile/:userid', async (req, res) => {
     // get the friend count
     const friendCount = await getFriendCount(profileUser.user_id);
 
+    // get the follower count
+    const followerCount = await getFollowerCount(profileUser.user_id);
+
     const viewerUserId = req.session.user?.user_id || null;
 
     // check if users are friends
@@ -718,8 +738,9 @@ app.get('/profile/:userid', async (req, res) => {
         isOwnProfile,
         reviews: reviews,
         friendCount: friendCount,
+        followerCount: followerCount,
         isFriend,
-        isFollowing
+        isFollowing,
     });
   
   // catch any unexpected errors

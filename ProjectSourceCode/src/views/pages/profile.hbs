@@ -22,13 +22,16 @@
           <!-- Friend Count -->
           <p class="text-muted mb-0">{{friendCount}} friends</p>
 
+          <!-- Follower Count -->
+          <p class="text-muted mb-0">{{followerCount}} followers</p>
+
           {{#if isOwnProfile}}
             <p class="text-muted mb-0">This is your profile.</p>
           
           <!-- Display friend status !-->
           {{else if profileUser}}
 
-            <!-- Only show if user is logged in -->
+            <!-- Only show friend status if user is logged in -->
             {{#if user}}
               {{#if isFriend}}
                 <p class="text-muted mb-0">You and {{profileUser.username}} are friends.</p>
