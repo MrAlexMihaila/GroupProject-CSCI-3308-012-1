@@ -368,6 +368,33 @@ function setupPlayback(device_id, token)
     });
 }
 
+// Dark Mode Toggle
+function initDarkMode() {
+  const darkModeToggle = document.getElementById('darkModeToggle');
+
+  // Load dark mode preference from localStorage
+  const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
+  if (isDarkMode) {
+    document.documentElement.classList.add('dark-mode');
+  }
+
+  // Toggle dark mode on button click
+  if (darkModeToggle) {
+    darkModeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark-mode');
+      
+      // Update localStorage
+      if (document.documentElement.classList.contains('dark-mode')) {
+        localStorage.setItem('darkMode', 'enabled');
+      } else {
+        localStorage.setItem('darkMode', 'disabled');
+      }
+    });
+  }
+}
+
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', initDarkMode);
 // Handles profile menu clicking and toggling
 function toggleProfileMenu() {
     const menu = document.getElementById('profileMenu');
