@@ -678,8 +678,6 @@ app.get('/profile/:userid', async (req, res) => {
       [userId]
     );
 
-    console.log("profileUser:", profileUser);
-
     // user not found
     if (!profileUser) {
       return res.status(404).render('pages/profile', {
@@ -693,8 +691,7 @@ app.get('/profile/:userid', async (req, res) => {
     }
 
     // check if the it is the logged in users profile and redirect to /profile
-    const isOwnProfile =
-      req.session.user && req.session.user.user_id === profileUser.user_id;
+    const isOwnProfile = req.session.user && req.session.user.user_id === profileUser.user_id;
     if (isOwnProfile) {
       return res.redirect('/profile');
     }
@@ -709,15 +706,10 @@ app.get('/profile/:userid', async (req, res) => {
 
     // check if users are friends
     const isFriend = await checkIfFriends(viewerUserId, profileUser.user_id);
-    console.log("isFriend:", isFriend);
-    console.log("got here 2");
 
     // check if following status
-    let isFollowing = false;
-    if (!isFriend) {
-      isFollowing = await checkIfFollowing(viewerUserId, profileUser.user_id);
-      console.log("isFollowing:", isFollowing);
-    }
+    const isFollowing = await checkIfFollowing(viewerUserId, profileUser.user_id);
+
 
     // render profile page
     return res.render('pages/profile', {
@@ -1237,12 +1229,8 @@ app.post('/friends/follow', async (req, res) => {
 });
 
 app.post('/friends/unfollow', async (req, res) => {
-  console.log("got here unfollow");
-    
   const currentUserId = req.session.user?.user_id;
   const { unfollowedId } = req.body;
-
-  console.log("Unfollow request received. Current user ID:", currentUserId, "User ID to unfollow:", unfollowedId);
 
   if (!currentUserId) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -1257,7 +1245,6 @@ app.post('/friends/unfollow', async (req, res) => {
       `DELETE FROM follows WHERE following_user_id = $1 AND followed_user_id = $2`,
       [currentUserId, unfollowedId]
     );
-    console.log(`User ${currentUserId} unfollowed user ${unfollowedId}`);
 
     return res.redirect('/profile/' + encodeURIComponent(unfollowedId));
 
