@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <div class="genre-header-wrapper">
   <div class="genre-header-card">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
@@ -26,6 +27,31 @@
       <div class="mb-4">
         <h3 class="mb-2" style="margin-left: 10px;">Top Artists in {{search}}</h3>
         <div class="row-scroll row-1 hidden">
+=======
+<div class="position-fixed top-0 bg-white pb-2" style="left: 280px; width: calc(100% - 280px); z-index: 1020; padding: 1rem;">
+  <div class="d-flex justify-content-between align-items-center">
+    <h2>Explore Genres</h2>
+    <form class="d-flex" method="GET" action="/genres">
+      <input
+        type="text"
+        class="form-control me-2"
+        name="search"
+        placeholder="Search by genre"
+        value="{{search}}"
+        aria-label="Search genres"
+      />
+      <button class="btn btn-outline-primary" type="submit">Search</button>
+    </form>
+  </div>
+</div>
+
+<div style="padding-top: 100px;"> <!-- Add padding to account for fixed header -->
+  {{#if search}}
+    {{#if artists}}
+      <div class="mb-4">
+        <h3 class="mb-2">Top Artists in {{search}}</h3>
+        <div class="row-scroll row-1">
+>>>>>>> b08d287 (need to verify)
           {{#each artists}}
             <div class="col-2-4">
               {{> artist_card}}
@@ -37,7 +63,11 @@
 
     {{#if songs}}
       <div class="mb-4">
+<<<<<<< HEAD
         <h3 class="mb-2" style="margin-left: 10px;">Top Songs in {{search}}</h3>
+=======
+        <h3 class="mb-2">Top Songs in {{search}}</h3>
+>>>>>>> b08d287 (need to verify)
         <div class="row-scroll row-1">
           {{#each songs}}
             <div class="col-2-4">
@@ -54,5 +84,9 @@
       {{/unless}}
     {{/unless}}
   {{else}}
+<<<<<<< HEAD
+=======
+    <div class="alert alert-info">Search for a genre to discover artists and songs.</div>
+>>>>>>> b08d287 (need to verify)
   {{/if}}
 </div>
