@@ -747,6 +747,8 @@ const auth = (req, res, next) => {
   next();
 };
 
+
+// User profile route
 // Logged in user profile route
 app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
