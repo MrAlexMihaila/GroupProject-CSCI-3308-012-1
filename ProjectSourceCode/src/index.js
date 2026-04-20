@@ -214,16 +214,15 @@ async function checkIfFriends(userId1, userId2) {
   return Boolean(isFriend);
 }
 
-// helper to check if there is a pending friend request between two users
-// should come after an isFriend check
-async function checkIfPending(userId1, userId2) {
-  const isPending = await db.oneOrNone(
+// helper to check if userId1 is following userId2
+async function checkIfFollowing(userId1, userId2) {
+  const isFollowing = await db.oneOrNone(
     `SELECT 1 AS friend_count
       FROM follows f WHERE f.following_user_id = $1 AND f.followed_user_id = $2;`,
     [userId1, userId2]
   );
 
-  return Boolean(isPending);
+  return Boolean(isFollowing);
 }
 
 // database configuration
@@ -713,13 +712,12 @@ app.get('/profile/:userid', async (req, res) => {
     console.log("isFriend:", isFriend);
     console.log("got here 2");
 
-    // check for pending status
-    let isPending = false;
+    // check if following status
+    let isFollowing = false;
     if (!isFriend) {
-      isPending = await checkIfPending(viewerUserId, profileUser.user_id);
-      console.log("isPending:", isPending);
+      isFollowing = await checkIfFollowing(viewerUserId, profileUser.user_id);
+      console.log("isFollowing:", isFollowing);
     }
-    console.log("got here 3");
 
     // render profile page
     return res.render('pages/profile', {
@@ -729,7 +727,7 @@ app.get('/profile/:userid', async (req, res) => {
         reviews: reviews,
         friendCount: friendCount,
         isFriend,
-        isPending
+        isFollowing
     });
   
   // catch any unexpected errors
@@ -1145,13 +1143,20 @@ app.get('/friends', auth, async (req, res) => {
         COALESCE(u.user_image_url, '/resources/img/default-profile.png') AS user_image_url, -- avatar fallback
         COALESCE(ft.friend_count, 0) AS friend_count,
         COALESCE(fot.follower_count, 0) AS follower_count,
-        rel.is_following AS "isFollowing", -- you follow them
-        (rel.is_following AND rel.follows_you) AS "isFriend", -- mutual followers
+
+         -- you follow them
+        rel.is_following AS "isFollowing",
+
+        -- mutual followers
+        (rel.is_following AND rel.follows_you) AS "isFriend", 
+        
+        -- friends, first-degree, then others
         CASE
           WHEN rel.is_following AND rel.follows_you THEN 0
           WHEN rel.is_following OR rel.follows_you THEN 1
           ELSE 2
-        END AS relationship_rank -- friends, first-degree, then others
+        END AS relationship_rank
+
       FROM users u
       JOIN relationship rel ON rel.user_id = u.user_id
       LEFT JOIN friend_totals ft ON ft.user_id = u.user_id
@@ -1163,6 +1168,7 @@ app.get('/friends', auth, async (req, res) => {
 
     const users = await db.any(friendsFirstQuery, values);
 
+    // convert counts to numbers and relationship booleans for handlebars
     const usersDisplay = users.map((u) => ({
       ...u,
       friend_count: Number(u.friend_count) || 0,
@@ -1171,13 +1177,15 @@ app.get('/friends', auth, async (req, res) => {
       isFriend: Boolean(u.isFriend),
     }));
 
+    // render the page with the users and search term
     res.render('pages/friends', {
       isFriends: true,
       users: usersDisplay,
       search,
       currentUserId,
     });
-  } catch (err) {
+
+  } catch (err) { // catch any unexpected errors
     console.error('Friends page load error:', err);
     res.render('pages/friends', {
       isFriends: true,
@@ -1188,15 +1196,15 @@ app.get('/friends', auth, async (req, res) => {
   }
 });
 
-app.post('/friends/add', async (req, res) => {
+app.post('/friends/follow', async (req, res) => {
   const currentUserId = req.session.user?.user_id;
-  const { userId, followedId } = req.body;
+  const { search, followedId } = req.body;
 
   if (!currentUserId) {
     return res.status(401).json({ message: 'Not authenticated' });
   }
 
-  if (!userId) {
+  if (!followedId) {
     return res.status(400).json({ message: 'Missing user ID' });
   }
 
@@ -1204,21 +1212,62 @@ app.post('/friends/add', async (req, res) => {
     await db.none(
       `INSERT INTO follows(following_user_id, followed_user_id) VALUES($1, $2)
        ON CONFLICT DO NOTHING`,
-      [currentUserId, userId]
+      [currentUserId, followedId]
     );
 
-    if (followedId) {
+    // redirect to friends page if sent from friends page
+    if (req.body.search || req.body.search === '') {
+      return res.redirect('/friends?search=' + encodeURIComponent(req.body.search));
+
+    } else {
+      // redirect to profile
       return res.redirect('/profile/' + encodeURIComponent(followedId));
     }
 
     res.redirect('/friends?search=' + encodeURIComponent(req.body.search || ''));
   } catch (err) {
-    console.error('Add friend error:', err);
+    console.error('Follow error:', err);
     res.status(500).render('pages/friends', {
       isFriends: true,
       users: [],
       search: req.body.search || '',
-      error: 'Unable to add friend. Please try again later.',
+      error: 'Unable to follow. Please try again later.',
+    });
+  }
+});
+
+app.post('/friends/unfollow', async (req, res) => {
+  console.log("got here unfollow");
+    
+  const currentUserId = req.session.user?.user_id;
+  const { unfollowedId } = req.body;
+
+  console.log("Unfollow request received. Current user ID:", currentUserId, "User ID to unfollow:", unfollowedId);
+
+  if (!currentUserId) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+
+  if (!unfollowedId) {
+    return res.status(400).json({ message: 'Missing user ID' });
+  }
+
+  try {
+    await db.none(
+      `DELETE FROM follows WHERE following_user_id = $1 AND followed_user_id = $2`,
+      [currentUserId, unfollowedId]
+    );
+    console.log(`User ${currentUserId} unfollowed user ${unfollowedId}`);
+
+    return res.redirect('/profile/' + encodeURIComponent(unfollowedId));
+
+  } catch (err) {
+    console.error('Unfollow error:', err);
+    res.status(500).render('pages/friends', {
+      isFriends: true,
+      users: [],
+      search: req.body.search || '',
+      error: 'Unable to unfollow. Please try again later.',
     });
   }
 });
