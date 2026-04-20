@@ -22,24 +22,37 @@
           <!-- Friend Count -->
           <p class="text-muted mb-0">{{friendCount}} friends</p>
 
+          <!-- Follower Count -->
+          <p class="text-muted mb-0">{{followerCount}} followers</p>
+
           {{#if isOwnProfile}}
             <p class="text-muted mb-0">This is your profile.</p>
           
           <!-- Display friend status !-->
           {{else if profileUser}}
 
-            <!-- Only show if user is logged in -->
-            {{# if user}}
+            <!-- Only show friend status if user is logged in -->
+            {{#if user}}
               {{#if isFriend}}
                 <p class="text-muted mb-0">You and {{profileUser.username}} are friends.</p>
+                
+                <!-- Form to unfollow user -->
+                <form method="POST" action="/friends/unfollow" class="mt-auto">
+                  <input type="hidden" name="unfollowedId" value="{{profileUser.user_id}}" />
+                  <button type="submit" class="btn btn-outline-primary mt-3 mb-0">Unfollow</button>
+                </form>
 
-              {{else if isPending}}
-                <p class="btn btn-outline-primary mt-3 mb-0">Following</p>
+              {{else if isFollowing}}
+                <!-- Form to unfollow user -->
+                <form method="POST" action="/friends/unfollow" class="mt-auto">
+                  <input type="hidden" name="unfollowedId" value="{{profileUser.user_id}}" />
+                  <button type="submit" class="btn btn-outline-primary mt-3 mb-0">Unfollow</button>
+                </form>
 
               {{else}}
-                <!-- Form to send friend request -->
-                <form method="POST" action="/friends/add" class="mt-3">
-                  <input type="hidden" name="userId" value="{{profileUser.user_id}}">
+                <!-- Form to follow user -->
+                <form method="POST" action="/friends/follow" class="mt-3">
+                  <input type="hidden" name="userId" value="{{user.user_id}}">
                   <input type="hidden" name="followedId" value="{{profileUser.user_id}}">
                   <button type="submit" class="btn btn-primary">Follow</button>
                 </form>

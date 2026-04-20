@@ -202,6 +202,20 @@ async function getFriendCount(userid) {
   }
 }
 
+// helper to get follower count
+async function getFollowerCount(userid) {
+  try {
+    const result = await db.one(
+      `SELECT COUNT(*) AS follower_count
+        FROM follows f WHERE f.followed_user_id = $1;`,
+      [userid])
+      return Number(result.follower_count) || 0;
+  } catch (err) {
+    console.error('Error fetching follower count:', err);
+    return 0;
+  }
+}
+
 // helper to check if two users are friends
 async function checkIfFriends(userId1, userId2) {
   const isFriend = await db.oneOrNone(
@@ -218,16 +232,15 @@ async function checkIfFriends(userId1, userId2) {
   return Boolean(isFriend);
 }
 
-// helper to check if there is a pending friend request between two users
-// should come after an isFriend check
-async function checkIfPending(userId1, userId2) {
-  const isPending = await db.oneOrNone(
+// helper to check if userId1 is following userId2
+async function checkIfFollowing(userId1, userId2) {
+  const isFollowing = await db.oneOrNone(
     `SELECT 1 AS friend_count
       FROM follows f WHERE f.following_user_id = $1 AND f.followed_user_id = $2;`,
     [userId1, userId2]
   );
 
-  return Boolean(isPending);
+  return Boolean(isFollowing);
 }
 
 // database configuration
@@ -753,12 +766,14 @@ const auth = (req, res, next) => {
 app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
   const friendCount = await getFriendCount(req.session.user.user_id);
+  const followerCount = await getFollowerCount(req.session.user.user_id);
   res.render('pages/profile', {
     user: req.session.user,
     profileUser: req.session.user,
     isOwnProfile: true,
     reviews,
-    friendCount
+    friendCount,
+    followerCount
   });
 });
 
@@ -767,6 +782,7 @@ app.get('/profile/:userid', async (req, res) => {
   
   // convert user id to integer and check if valid
   const userId = Number.parseInt(req.params.userid, 10);
+
   if (!Number.isInteger(userId) || userId <= 0) {
     return res.status(400).render('pages/profile', {
       user: req.session.user,
@@ -785,8 +801,6 @@ app.get('/profile/:userid', async (req, res) => {
       [userId]
     );
 
-    console.log("profileUser:", profileUser);
-
     // user not found
     if (!profileUser) {
       return res.status(404).render('pages/profile', {
@@ -800,8 +814,7 @@ app.get('/profile/:userid', async (req, res) => {
     }
 
     // check if the it is the logged in users profile and redirect to /profile
-    const isOwnProfile =
-      req.session.user && req.session.user.user_id === profileUser.user_id;
+    const isOwnProfile = req.session.user && req.session.user.user_id === profileUser.user_id;
     if (isOwnProfile) {
       return res.redirect('/profile');
     }
@@ -812,20 +825,17 @@ app.get('/profile/:userid', async (req, res) => {
     // get the friend count
     const friendCount = await getFriendCount(profileUser.user_id);
 
+    // get the follower count
+    const followerCount = await getFollowerCount(profileUser.user_id);
+
     const viewerUserId = req.session.user?.user_id || null;
 
     // check if users are friends
     const isFriend = await checkIfFriends(viewerUserId, profileUser.user_id);
-    console.log("isFriend:", isFriend);
-    console.log("got here 2");
 
-    // check for pending status
-    let isPending = false;
-    if (!isFriend) {
-      isPending = await checkIfPending(viewerUserId, profileUser.user_id);
-      console.log("isPending:", isPending);
-    }
-    console.log("got here 3");
+    // check if following status
+    const isFollowing = await checkIfFollowing(viewerUserId, profileUser.user_id);
+
 
     // render profile page
     return res.render('pages/profile', {
@@ -834,8 +844,9 @@ app.get('/profile/:userid', async (req, res) => {
         isOwnProfile,
         reviews: reviews,
         friendCount: friendCount,
+        followerCount: followerCount,
         isFriend,
-        isPending
+        isFollowing,
     });
   
   // catch any unexpected errors
@@ -1289,13 +1300,23 @@ app.get('/friends', auth, async (req, res) => {
         COALESCE(u.user_image_url, '/resources/img/default-profile.png') AS user_image_url, -- avatar fallback
         COALESCE(ft.friend_count, 0) AS friend_count,
         COALESCE(fot.follower_count, 0) AS follower_count,
-        rel.is_following AS "isFollowing", -- you follow them
-        (rel.is_following AND rel.follows_you) AS "isFriend", -- mutual followers
+
+         -- you follow them
+        rel.is_following AS "isFollowing",
+
+        -- they follow you
+        rel.follows_you AS "followsYou",
+
+        -- mutual followers
+        (rel.is_following AND rel.follows_you) AS "isFriend", 
+        
+        -- friends, first-degree, then others
         CASE
           WHEN rel.is_following AND rel.follows_you THEN 0
           WHEN rel.is_following OR rel.follows_you THEN 1
           ELSE 2
-        END AS relationship_rank -- friends, first-degree, then others
+        END AS relationship_rank
+
       FROM users u
       JOIN relationship rel ON rel.user_id = u.user_id
       LEFT JOIN friend_totals ft ON ft.user_id = u.user_id
@@ -1307,21 +1328,25 @@ app.get('/friends', auth, async (req, res) => {
 
     const users = await db.any(friendsFirstQuery, values);
 
+    // convert counts to numbers and relationship booleans for handlebars
     const usersDisplay = users.map((u) => ({
       ...u,
       friend_count: Number(u.friend_count) || 0,
       follower_count: Number(u.follower_count) || 0,
       isFollowing: Boolean(u.isFollowing),
+      followsYou: Boolean(u.followsYou),
       isFriend: Boolean(u.isFriend),
     }));
 
+    // render the page with the users and search term
     res.render('pages/friends', {
       isFriends: true,
       users: usersDisplay,
       search,
       currentUserId,
     });
-  } catch (err) {
+
+  } catch (err) { // catch any unexpected errors
     console.error('Friends page load error:', err);
     res.render('pages/friends', {
       isFriends: true,
@@ -1332,15 +1357,15 @@ app.get('/friends', auth, async (req, res) => {
   }
 });
 
-app.post('/friends/add', async (req, res) => {
+app.post('/friends/follow', async (req, res) => {
   const currentUserId = req.session.user?.user_id;
-  const { userId, followedId } = req.body;
+  const { search, followedId } = req.body;
 
   if (!currentUserId) {
     return res.status(401).json({ message: 'Not authenticated' });
   }
 
-  if (!userId) {
+  if (!followedId) {
     return res.status(400).json({ message: 'Missing user ID' });
   }
 
@@ -1348,21 +1373,57 @@ app.post('/friends/add', async (req, res) => {
     await db.none(
       `INSERT INTO follows(following_user_id, followed_user_id) VALUES($1, $2)
        ON CONFLICT DO NOTHING`,
-      [currentUserId, userId]
+      [currentUserId, followedId]
     );
 
-    if (followedId) {
+    // redirect to friends page if sent from friends page
+    if (req.body.search || req.body.search === '') {
+      return res.redirect('/friends?search=' + encodeURIComponent(req.body.search));
+
+    } else {
+      // redirect to profile
       return res.redirect('/profile/' + encodeURIComponent(followedId));
     }
 
     res.redirect('/friends?search=' + encodeURIComponent(req.body.search || ''));
   } catch (err) {
-    console.error('Add friend error:', err);
+    console.error('Follow error:', err);
     res.status(500).render('pages/friends', {
       isFriends: true,
       users: [],
       search: req.body.search || '',
-      error: 'Unable to add friend. Please try again later.',
+      error: 'Unable to follow. Please try again later.',
+    });
+  }
+});
+
+app.post('/friends/unfollow', async (req, res) => {
+  const currentUserId = req.session.user?.user_id;
+  const { unfollowedId } = req.body;
+
+  if (!currentUserId) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+
+  if (!unfollowedId) {
+    return res.status(400).json({ message: 'Missing user ID' });
+  }
+
+  try {
+    await db.none(
+      `DELETE FROM follows WHERE following_user_id = $1 AND followed_user_id = $2`,
+      [currentUserId, unfollowedId]
+    );
+
+    return res.redirect('/profile/' + encodeURIComponent(unfollowedId));
+
+  } catch (err) {
+    console.error('Unfollow error:', err);
+    res.status(500).render('pages/friends', {
+      isFriends: true,
+      users: [],
+      search: req.body.search || '',
+      error: 'Unable to unfollow. Please try again later.',
     });
   }
 });
