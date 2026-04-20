@@ -22,7 +22,7 @@
             <form method="POST" action="/friends/follow" class="mt-auto" onclick="event.stopPropagation();">
                 <input type="hidden" name="followedId" value="{{user_id}}" />
                 <input type="hidden" name="search" value="{{search}}" />
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit" class="btn btn-purple w-100">
                     {{#if followsYou}}Follow back{{else}}Follow{{/if}}
                 </button>
             </form>

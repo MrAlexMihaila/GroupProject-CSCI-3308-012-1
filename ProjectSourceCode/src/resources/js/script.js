@@ -156,17 +156,26 @@ document.getElementById("play-toggle")?.addEventListener("click", async () => {
     {
         return;
     }
+
+    const icon = document.querySelector("#play-toggle i");
+
     if(isPlaying)
     {
         await playerInstance.pause();
         isPlaying = false;
-        document.getElementById("play-toggle").textContent = "▶";
+        if(icon)
+        {
+            icon.className = "bi bi-play-fill";
+        }
     } 
     else
     {
         await playerInstance.resume();
         isPlaying = true;
-        document.getElementById("play-toggle").textContent = "⏸";
+        if(icon)
+        {
+            icon.className = "bi bi-pause-fill";
+        }
     }
 });
 
@@ -271,6 +280,8 @@ setInterval(async () => {
 
     document.getElementById("seek-bar").value = percent;
 
+    document.getElementById("seek-bar").style.background = `linear-gradient(to right, #6f42c1 0%, #6f42c1 ${percent}%, #e9ecef ${percent}%, #e9ecef 100%)`;
+
     const seconds = Math.floor(position / 1000);
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -284,7 +295,7 @@ window.onSpotifyWebPlaybackSDKReady = () =>
 {
     if(document.getElementById("song-page"))
     {
-        console.log("SONG TAB PAGE!!!");
+        //console.log("SONG TAB PAGE!!!");
 
         const token = SPOTIFY_TOKEN;
 
@@ -305,7 +316,7 @@ window.onSpotifyWebPlaybackSDKReady = () =>
 
         player.addListener('ready', ({ device_id }) => 
         {
-            console.log('Ready with Device ID', device_id);
+            //console.log('Ready with Device ID', device_id);
             setupPlayback(device_id, token);
         });
 
@@ -343,6 +354,10 @@ function setupPlayback(device_id, token)
                 'Authorization': `Bearer ${token}`
                 },
             });
+
+            isPlaying = true;
+            const icon = document.querySelector("#play-toggle i");
+            icon.className = "bi bi-pause-fill";
         } catch(err)
         {
             console.log(err);
