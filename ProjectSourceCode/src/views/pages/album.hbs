@@ -35,31 +35,6 @@
         </div>
         <div class="col-md-7 p-4">
             <div class="row">
-                <!-- Tracks -->
-                <div class="col-md-6">
-                    <h5>Tracks</h5>
-                    <ul class="list-group">
-                        {{#each tracks}}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <a href="/song/{{this.id}}" class="text-decoration-none">
-                                        {{this.name}}
-                                    </a>
-
-                                    {{#if this.rating}}
-                                        <span class="ms-2 badge bg-primary">
-                                            {{this.rating}}
-                                        </span>
-                                    {{/if}}
-                                </div>
-
-                                <span class="text-muted">
-                                    {{this.formattedDuration}}
-                                </span>
-                            </li>
-                        {{/each}}
-                    </ul>
-                </div>
                 <!-- Reviews -->
                 <div class="col-md-6">
                     <h5>Community Rating:</h5>
@@ -86,6 +61,31 @@
                             </button>
                         {{/if}}
                     {{/if}}
+                </div>
+                <!-- Tracks -->
+                <div class="col-md-6">
+                    <h5>Tracks</h5>
+                    <ul class="list-group">
+                        {{#each tracks}}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="/song/{{this.id}}" class="text-decoration-none">
+                                        {{this.name}}
+                                    </a>
+
+                                    {{#if this.rating}}
+                                        <span class="ms-2 badge bg-primary">
+                                            {{this.rating}}
+                                        </span>
+                                    {{/if}}
+                                </div>
+
+                                <span class="text-muted">
+                                    {{this.formattedDuration}}
+                                </span>
+                            </li>
+                        {{/each}}
+                    </ul>
                 </div>
             </div>
         </div>
