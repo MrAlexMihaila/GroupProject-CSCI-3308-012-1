@@ -341,7 +341,23 @@ app.get('/', (req, res) => {
 
 //home get route, renders home page
 app.get('/home', (req, res) => {
-    res.render('pages/home');
+    // Dummy data for demonstration
+    const topSongs = [
+        { id: '1', name: 'Song 1', album: { name: 'Album 1', images: [{ url: 'https://via.placeholder.com/150' }] }, artists: [{ name: 'Artist 1' }] },
+        { id: '2', name: 'Song 2', album: { name: 'Album 2', images: [{ url: 'https://via.placeholder.com/150' }] }, artists: [{ name: 'Artist 2' }] },
+        // Add more as needed
+    ];
+    const topAlbums = [
+        { id: '1', name: 'Album 1', images: [{ url: 'https://via.placeholder.com/150' }], artists: [{ name: 'Artist 1' }], release_date: '2023-01-01' },
+        { id: '2', name: 'Album 2', images: [{ url: 'https://via.placeholder.com/150' }], artists: [{ name: 'Artist 2' }], release_date: '2023-01-01' },
+        // Add more
+    ];
+    const friendActivities = [
+        { type: 'comment', user: 'Friend1', content: 'Great song!' },
+        { type: 'like', user: 'Friend2', content: 'Awesome review!' },
+        // Add more
+    ];
+    res.render('pages/home', { topSongs, topAlbums, friendActivities });
 });
 
 //logic get route
