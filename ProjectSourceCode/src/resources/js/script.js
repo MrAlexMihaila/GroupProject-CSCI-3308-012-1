@@ -50,7 +50,6 @@ function makeReview()
 
 function makeAlbumReview()
 {
-    console.log(document.getElementById("album-page"));
     return {
         albumID: document.getElementById("album-page").dataset.albumId,
         rating: convertRatingToInt(document.getElementById("review_rating").value),
@@ -201,6 +200,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         playerTimestampPosition = state.position/1000;
     })
+});
+
+//eventlistener for album review post
+document.addEventListener("DOMContentLoaded", () => {
+
+    const songForm = document.getElementById("event_form");
+
+    if (songForm) {
+        songForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            await handleAlbumSubmit();
+        });
+    }
+
 });
 
 //eventlistener for album review post
