@@ -270,88 +270,162 @@ body {
 }
 
 /* dark mode stylings*/
-body.dark-mode {
+html.dark-mode body {
   background-color: #1a1a1a;
   color: #e0e0e0;
 }
 /*updates all of the backgrounds to dark and text to light on all files*/
-body.dark-mode .bg-light {
+html.dark-mode .bg-light {
   background-color: #2d2d2d !important;
 }
 
-body.dark-mode .nav-link {
+html.dark-mode .nav-link {
   color: #e0e0e0 !important;
 }
 
-body.dark-mode .nav-link:hover {
+html.dark-mode .nav-link:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-body.dark-mode .nav-pills .nav-link.active,
-body.dark-mode .nav-pills .show > .nav-link {
+html.dark-mode .nav-pills .nav-link.active,
+html.dark-mode .nav-pills .show > .nav-link {
   background-color: #555;
   color: #fff;
 }
 
-body.dark-mode main {
+html.dark-mode main {
   background-color: #1a1a1a;
 }
 
-body.dark-mode .card,
-body.dark-mode .artist-card,
-body.dark-mode .album-card,
-body.dark-mode .song-card {
+html.dark-mode .card,
+html.dark-mode .artist-card,
+html.dark-mode .album-card,
+html.dark-mode .song-card {
   background-color: #2d2d2d;
   color: #e0e0e0;
   border-color: #444;
 }
 
-body.dark-mode .form-control,
-body.dark-mode .form-select,
-body.dark-mode input {
+html.dark-mode .list-group-item {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+html.dark-mode .list-group-item a {
+  color: #ffffff;
+}
+
+html.dark-mode .list-group-item a:hover {
+  color: #ffffff;
+}
+
+html.dark-mode .form-control,
+html.dark-mode .form-select,
+html.dark-mode input {
   background-color: #333;
   color: #e0e0e0;
   border-color: #555;
 }
 
-body.dark-mode .form-control:focus,
-body.dark-mode .form-select:focus,
-body.dark-mode input:focus {
+html.dark-mode .form-select option {
+  color: #e0e0e0;
+  background-color: #333;
+}
+
+html.dark-mode .search-icon {
+  color: #ffffff;
+}
+
+/* Player UI dark mode */
+html.dark-mode #player-ui {
+  background-color: #2d2d2d !important;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+/* Seek bar styling in dark mode */
+html.dark-mode #seek-bar {
+  background-color: #555;
+  color: #e0e0e0;
+}
+
+html.dark-mode #seek-bar::-webkit-slider-track {
+  background: #666;
+  height: 4px;
+  border-radius: 2px;
+}
+
+html.dark-mode #seek-bar::-webkit-slider-thumb {
+  background: #e0e0e0;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+html.dark-mode #seek-bar::-moz-range-track {
+  background: #666;
+  height: 4px;
+  border-radius: 2px;
+}
+
+html.dark-mode #seek-bar::-moz-range-thumb {
+  background: #e0e0e0;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Review and comment borders in dark mode */
+html.dark-mode .border {
+  border-color: #444 !important;
+}
+
+/* Time display in player */
+html.dark-mode #time-display {
+  color: #b0b0b0;
+}
+
+html.dark-mode .form-control:focus,
+html.dark-mode .form-select:focus,
+html.dark-mode input:focus {
   background-color: #333;
   color: #e0e0e0;
   border-color: #666;
   box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.1);
 }
 
-body.dark-mode .input-group-text {
+html.dark-mode .input-group-text {
   background-color: #333;
   color: #e0e0e0;
   border-color: #555;
 }
 
-body.dark-mode .dropdown-item {
+html.dark-mode .dropdown-item {
   color: #e0e0e0;
 }
 
-body.dark-mode .dropdown-item:hover {
+html.dark-mode .dropdown-item:hover {
   background-color: #444;
 }
 
-body.dark-mode #profileMenu {
+html.dark-mode #profileMenu {
   background-color: #2d2d2d;
 }
 
-body.dark-mode #profileMenu .dropdown-item {
+html.dark-mode #profileMenu .dropdown-item {
   color: #e0e0e0 !important;
   border-bottom-color: #444 !important;
 }
 
-body.dark-mode #profileMenu .dropdown-item:hover {
+html.dark-mode #profileMenu .dropdown-item:hover {
   background-color: #3d3d3d !important;
   color: #fff !important;
 }
 
-body.dark-mode #profileMenu .dropdown-item-logout {
+html.dark-mode #profileMenu .dropdown-item-logout {
   color: #ff6b6b !important;
 }
 
@@ -360,101 +434,112 @@ body.dark-mode #profileMenu .dropdown-item-logout:hover {
   color: #ff8888 !important;
 }
 
-body.dark-mode table {
+html.dark-mode table {
   color: #e0e0e0;
   border-color: #444;
 }
 
-body.dark-mode .btn-outline-dark {
+html.dark-mode .btn-outline-dark {
   color: #e0e0e0;
   border-color: #666;
 }
 
-body.dark-mode .btn-outline-dark:hover {
+html.dark-mode .btn-outline-dark:hover {
   background-color: #444;
   border-color: #777;
 }
 
 /* Dark Mode Button Styles */
-body.dark-mode .btn-primary {
+html.dark-mode .btn-primary {
   background-color: #0d6efd;
   border-color: #0d6efd;
   color: #fff;
 }
 
-body.dark-mode .btn-primary:hover {
+html.dark-mode .btn-primary:hover {
   background-color: #0b5ed7;
   border-color: #0a58ca;
 }
 
-body.dark-mode .btn-secondary {
+html.dark-mode .btn-secondary {
   background-color: #6c757d;
   border-color: #6c757d;
   color: #fff;
 }
 
-body.dark-mode .btn-secondary:hover {
+html.dark-mode .btn-secondary:hover {
   background-color: #5c636a;
   border-color: #565e64;
 }
 
-body.dark-mode .btn-outline-primary {
+html.dark-mode .btn-outline-primary {
   color: #0d6efd;
   border-color: #0d6efd;
 }
 
-body.dark-mode .btn-outline-primary:hover {
+html.dark-mode .btn-outline-primary:hover {
   background-color: #0d6efd;
   border-color: #0d6efd;
   color: #fff;
 }
 
-body.dark-mode .btn-close {
+html.dark-mode .btn-close {
   filter: invert(1);
 }
 
-body.dark-mode .btn-close:focus {
+html.dark-mode .btn-close:focus {
   box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25);
 }
 
 /* Dark Mode Modal and Popover Styles */
-body.dark-mode .modal-content {
+html.dark-mode .modal-content {
   background-color: #2d2d2d;
   color: #e0e0e0;
   border-color: #444;
 }
 
-body.dark-mode .modal-header {
+html.dark-mode .modal-header {
   border-color: #444;
 }
 
-body.dark-mode .modal-footer {
+html.dark-mode .modal-footer {
   border-color: #444;
 }
 
 /* Dark Mode Label and Badge */
-body.dark-mode label {
+html.dark-mode label {
   color: #e0e0e0;
 }
 
-body.dark-mode .badge {
+html.dark-mode .badge {
   background-color: #444;
 }
 
+html.dark-mode .badge.bg-warning {
+  color: #000 !important;
+}
+
 /* Dark Mode Alert */
-body.dark-mode .alert {
+html.dark-mode .alert {
+  background-color: #2d2d2d;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+/* Dark Mode Alert */
+html.dark-mode .alert {
   background-color: #2d2d2d;
   border-color: #444;
   color: #e0e0e0;
 }
 
 /* Dark Mode Sticky Headers Fix */
-body.dark-mode h1,
-body.dark-mode h2,
-body.dark-mode h3,
-body.dark-mode h4,
-body.dark-mode h5,
-body.dark-mode h6 {
+html.dark-mode h1,
+html.dark-mode h2,
+html.dark-mode h3,
+html.dark-mode h4,
+html.dark-mode h5,
+html.dark-mode h6 {
   color: #e0e0e0;
 }
 
@@ -463,7 +548,7 @@ body.dark-mode h6 {
   background-color: #fff;
 }
 
-body.dark-mode .sticky-header {
+html.dark-mode .sticky-header {
   background-color: #2d2d2d;
   color: #e0e0e0;
 }
@@ -476,7 +561,7 @@ body.dark-mode .sticky-header {
   box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
 }
 
-body.dark-mode .profile-menu-dropdown {
+html.dark-mode .profile-menu-dropdown {
   background-color: #2d2d2d;
   border-color: #444;
   box-shadow: 0 -2px 8px rgba(0,0,0,0.3);
@@ -497,21 +582,21 @@ body.dark-mode .profile-menu-dropdown {
   transform: scale(1.1);
 }
 /* dark mode button */
-body.dark-mode .dark-mode-btn {
+html.dark-mode .dark-mode-btn {
   background-color: #444;
   color: #ffd700;
 }
 
-body.dark-mode .dark-mode-btn:hover {
+html.dark-mode .dark-mode-btn:hover {
   background-color: #555;
 }
 
 /* Dark Mode Text Colors */
-body.dark-mode .text-dark {
+html.dark-mode .text-dark {
   color: #e0e0e0 !important;
 }
 
-body.dark-mode .text-muted {
+html.dark-mode .text-muted {
   color: #b0b0b0 !important;
 }
 
@@ -582,8 +667,13 @@ body.dark-mode .navbar-form .form-control {
   border-color: #555 !important;
 }
 
-body.dark-mode .navbar-form .form-control::placeholder {
-  color: #888;
+html.dark-mode .navbar-form .form-control::placeholder {
+  color: #ffffff;
+}
+
+/* Logo text white in dark mode */
+html.dark-mode .fs-4 {
+  color: #ffffff;
 }
 
 /* Small text to white */

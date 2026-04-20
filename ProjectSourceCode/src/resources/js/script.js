@@ -360,16 +360,16 @@ function initDarkMode() {
   // Load dark mode preference from localStorage
   const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
   if (isDarkMode) {
-    document.body.classList.add('dark-mode');
+    document.documentElement.classList.add('dark-mode');
   }
 
   // Toggle dark mode on button click
   if (darkModeToggle) {
     darkModeToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark-mode');
+      document.documentElement.classList.toggle('dark-mode');
       
       // Update localStorage
-      if (document.body.classList.contains('dark-mode')) {
+      if (document.documentElement.classList.contains('dark-mode')) {
         localStorage.setItem('darkMode', 'enabled');
       } else {
         localStorage.setItem('darkMode', 'disabled');
