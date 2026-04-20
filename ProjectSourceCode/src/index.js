@@ -149,15 +149,90 @@ function convertRatingToLetter(rating)
     {
       return "D";
     }
-    else
+    else if(rating >= 0.5)
     {
       return "E";
     }
+    else
+    {
+      return "F";
+    }
+}
+
+// helper function to get recent reviews
+async function getRecentReviews(userid, limit = 5) {
+  try {
+    const reviews = await db.any(
+      `SELECT r.review_id, r.rating, r.review_text, r.song_id, r.created_at, u.username,
+              s.song_id, COALESCE(s.title, 'Unknown Song') AS song_title, a.image_url
+        FROM reviews r
+        JOIN users u ON r.user_id = u.user_id
+        LEFT JOIN songs s ON r.song_id = s.song_id
+        LEFT JOIN albums a ON s.album_id = a.album_id
+        WHERE r.user_id = $1
+        ORDER BY r.created_at DESC
+        LIMIT $2`,
+      [userid, limit]
+    );
+    return reviews;
+  } catch (err) {
+    console.error('Error fetching recent reviews:', err);
+    return [];
+  }
+}
+
+// helper to get friend count
+async function getFriendCount(userid) {
+  try {
+    const result = await db.one(
+      `SELECT COUNT(*) AS friend_count
+        FROM follows f WHERE f.following_user_id = $1
+        AND EXISTS (
+          SELECT 1
+          FROM follows r
+          WHERE r.following_user_id = f.followed_user_id
+          AND r.followed_user_id = $1
+        );`,
+      [userid])
+      return Number(result.friend_count) || 0;
+      
+  } catch (err) {
+    console.error('Error fetching friend count:', err);
+    return 0;
+  }
+}
+
+// helper to check if two users are friends
+async function checkIfFriends(userId1, userId2) {
+  const isFriend = await db.oneOrNone(
+    `SELECT 1 AS friend_count
+      FROM follows f WHERE f.following_user_id = $1 AND f.followed_user_id = $2
+      AND EXISTS (
+        SELECT 1
+        FROM follows r
+        WHERE r.following_user_id = f.followed_user_id AND r.followed_user_id = $1
+      );`,
+    [userId1, userId2]
+  );
+
+  return Boolean(isFriend);
+}
+
+// helper to check if there is a pending friend request between two users
+// should come after an isFriend check
+async function checkIfPending(userId1, userId2) {
+  const isPending = await db.oneOrNone(
+    `SELECT 1 AS friend_count
+      FROM follows f WHERE f.following_user_id = $1 AND f.followed_user_id = $2;`,
+    [userId1, userId2]
+  );
+
+  return Boolean(isPending);
 }
 
 // database configuration
 const dbConfig = {
-  host: 'db', // the database server
+  host: process.env.HOST || 'db', // the database server
   port: 5432, // the database port
   database: process.env.POSTGRES_DB, // the database name
   user: process.env.POSTGRES_USER, // the user account to connect with
@@ -214,27 +289,6 @@ app.use(
 app.use(express.static(__dirname + '/')); //allow for anything in resources directory to be used
 
 //basically everything above this line was taken from lab 7
-
-// helper function to get recent reviews
-async function getRecentReviews(userid, limit = 5) {
-  try {
-    const reviews = await db.any(
-      `SELECT r.review_id, r.rating, r.review_text, r.song_id, r.created_at, u.username,
-              COALESCE(s.title, 'Unknown Song') AS song_title
-        FROM reviews r
-        JOIN users u ON r.user_id = u.user_id
-        LEFT JOIN songs s ON r.song_id = s.song_id
-        WHERE r.user_id = $1
-        ORDER BY r.created_at DESC
-        LIMIT $2`,
-      [userid, limit]
-    );
-    return reviews;
-  } catch (err) {
-    console.error('Error fetching recent reviews:', err);
-    return [];
-  }
-}
 
 //lab 10 test function
 app.get('/welcome', (req, res) => {
@@ -346,7 +400,7 @@ app.get('/spotify-login', (req, res) => {
     response_type: "code",
     client_id: process.env.SPOTIFY_CLIENT_ID,
     scope: scope,
-    redirect_uri: "http://127.0.0.1:3000/spotify-callback",
+    redirect_uri: process.env.REDIRECT_URI || "http://127.0.0.1:3000/spotify-callback",
     state: state
   });
 
@@ -382,7 +436,7 @@ app.get('/spotify-callback', async (req, res) => {
       data: new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: "http://127.0.0.1:3000/spotify-callback",
+        redirect_uri: process.env.REDIRECT_URI || "http://127.0.0.1:3000/spotify-callback",
       }).toString(),
     });
 
@@ -397,12 +451,13 @@ app.get('/spotify-callback', async (req, res) => {
   }
 });
 
+
 app.get('/search', async (req, res) => {
   console.log("TYPE FROM FRONTEND:", req.query.type);
   const query = req.query.song;
   let type = req.query.type || "track"; // defaults to song
   
-  const validTypes = ["track", "artist", "album"];
+  const validTypes = ["track", "artist", "album", "users"];
   if (!validTypes.includes(type)) {
     type = "track"; // defaults to track
   }
@@ -411,15 +466,27 @@ app.get('/search', async (req, res) => {
     return res.redirect('/home');
   }
 
+  // handle users separately — no Spotify needed
+  if (type === "users") {
+    try {
+      const users = await db.any(
+        'SELECT user_id, username FROM users WHERE username ILIKE $1 LIMIT 25',
+        [`%${query}%`]
+      );
+      return res.render('pages/search_users', { user_list: users, isUsers: true });
+    } catch (err) {
+      console.error(err.message);
+      return res.render('pages/search_users', { user_list: [], isUsers: true });
+    }
+  }
+
   try {
     // get a valid api token
     const token = await getSpotifyToken();
     
     const response = await axios({
-
       url: "https://api.spotify.com/v1/search",
       method: "GET",
-
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -455,17 +522,15 @@ app.get('/search', async (req, res) => {
         isAlbums: true
       });
     }
+
     console.log("Search query:", query);
     console.log("Search type:", type);
     console.log("Number of results:", results.length);
     console.log("First result:", results[0]);
   }
   
-
-  
   catch (err) {
     console.error(err.response?.data || err.message);
-
     res.render('pages/song', {
       song_list: [],
       isSongs: true,
@@ -538,7 +603,7 @@ app.get('/albums', async (req, res) => {
       url: "https://api.spotify.com/v1/search",
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
-      params: { q: "popular albums", type: "album", limit: 50 }
+      params: { q: "Greatest hits", type: "album", limit: 50 }
     });
     const popularAlbums = popularAlbumsResponse.data.albums.items.filter(a => a !== null);
 
@@ -548,31 +613,49 @@ app.get('/albums', async (req, res) => {
     res.render('pages/albums', { topAlbums: [], popularAlbums: [], isAlbums: true });
   }
 });
-/*it works, but it doesn't fetch the playlists like it should, Im just searching top hits 2025, or popular songs 2025 so theres some bad data*/ 
+
+
 app.get('/songs', async (req, res) => {
   try {
     const token = await getSpotifyToken();
 
-    let USATop50PlaylistID = "3DLP1u57jcYremGNWw9Gfn"; //playlist id for a custom playlist i made with the current top 50 songs in the usa
-
-    const topChartsResponse = await axios({
-      url: "https://api.spotify.com/v1/search",
+    const top50Response = await axios({
+      url: "https://api.spotify.com/v1/playlists/5FN6Ego7eLX6zHuCMovIR2/tracks", // link to a global top 50 playlist
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
-      params: { q: "top hits 2025", type: "track", limit: 50 }
+      params: { limit: 50, market: "US" }
     });
-    const topCharts = topChartsResponse.data.tracks.items.filter(t => t !== null);
-    console.log("topCharts count:", topCharts.length);
 
+    //console.log("raw response status:", top50Response.status);
+    //console.log("raw items:", JSON.stringify(top50Response.data.items?.slice(0, 2), null, 2));
+    //testing to see if we can get the tracks from the playlist response, and filter out any nulls just in case
+    const topCharts = top50Response.data.items
+      .map(item => item.track)
+      .filter(t => t !== null);
+    console.log("top charts count:", topCharts.length);
+
+    const popularResponse = await axios({
+      url: "https://api.spotify.com/v1/playlists/1ti3v0lLrJ4KhSTuxt4loZ/tracks", // classic rock playlist
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      params: { limit: 50, market: "US" }
+    });
+
+    const popular = popularResponse.data.items
+      .map(item => item.track)
+      .filter(t => t !== null);
+    console.log("popular count:", popular.length);
+/*
     const popularResponse = await axios({
       url: "https://api.spotify.com/v1/search",
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
       params: { q: "yacht rock", type: "track", limit: 50 }
     });
+
     const popular = popularResponse.data.tracks.items.filter(t => t !== null);
     console.log("popular count:", popular.length);
-
+*/
     res.render('pages/songs_tab', { topCharts, popular, isSongs: true });
   } catch (err) {
     console.error(err.response?.data || err.message);
@@ -581,7 +664,78 @@ app.get('/songs', async (req, res) => {
 });
 
 app.get('/genres', async (req, res) => {
-  res.render('pages/genres', {isGenres: true});
+  const search = req.query.search ? req.query.search.trim() : '';
+
+  if (!search) {
+    return res.render('pages/genres', { isGenres: true, search });
+  }
+
+  try {
+    const token = await getSpotifyToken();
+
+    // Search for artists by genre
+    const searchResponse = await axios({
+      url: 'https://api.spotify.com/v1/search',
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params: {
+        q: `genre:"${search}"`,
+        type: 'artist',
+        limit: 10, 
+      },
+    });
+
+    const artists = searchResponse.data.artists.items;
+
+    if (artists.length === 0) {
+      return res.render('pages/genres', { isGenres: true, search, songs: [] });
+    }
+
+    const songsPromises = artists.map(async (artist) => {
+      try {
+        const tracksResponse = await axios({
+          url: `https://api.spotify.com/v1/artists/${artist.id}/top-tracks`,
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            market: 'US',
+          },
+        });
+        return tracksResponse.data.tracks.slice(0, 5);
+      } catch (err) {
+        console.error(`Error getting top tracks for artist ${artist.id}:`, err.message);
+        return [];
+      }
+    });
+
+    const songsArrays = await Promise.all(songsPromises);
+    const songs = songsArrays.flat();
+
+    // Remove duplicates and choose the top 10 songs by popularity
+    const uniqueSongs = songs
+      .filter((song, index, self) => index === self.findIndex(s => s.id === song.id))
+      .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+      .slice(0, 10);
+
+    res.render('pages/genres', {
+      isGenres: true,
+      search,
+      artists,
+      songs: uniqueSongs,
+    });
+  } catch (err) {
+    console.error('Error fetching genres:', err.response?.data || err.message);
+    res.render('pages/genres', {
+      isGenres: true,
+      search,
+      artists: [],
+      songs: [],
+    });
+  }
 });
 
 //Authentication Middleware, from lab 7 (again)
@@ -593,13 +747,16 @@ const auth = (req, res, next) => {
   next();
 };
 
-// User profile route
+// Logged in user profile route
 app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
+  const friendCount = await getFriendCount(req.session.user.user_id);
   res.render('pages/profile', {
     user: req.session.user,
+    profileUser: req.session.user,
     isOwnProfile: true,
-    reviews
+    reviews,
+    friendCount
   });
 });
 
@@ -610,10 +767,12 @@ app.get('/profile/:userid', async (req, res) => {
   const userId = Number.parseInt(req.params.userid, 10);
   if (!Number.isInteger(userId) || userId <= 0) {
     return res.status(400).render('pages/profile', {
+      user: req.session.user,
       message: 'Invalid user id.',
-      user: null,
+      profileUser: null,
       isOwnProfile: false,
-      reviews: []
+      reviews: [],
+      friendCount: 0
     });
   }
 
@@ -624,31 +783,68 @@ app.get('/profile/:userid', async (req, res) => {
       [userId]
     );
 
+    console.log("profileUser:", profileUser);
+
+    // user not found
     if (!profileUser) {
       return res.status(404).render('pages/profile', {
+        user: req.session.user,
         message: 'User not found.',
-        user: null,
+        profileUser: null,
         isOwnProfile: false,
-        reviews: []
+        reviews: [],
+        friendCount: 0
       });
     }
 
-    // check if the it is the logged in users profile
+    // check if the it is the logged in users profile and redirect to /profile
     const isOwnProfile =
       req.session.user && req.session.user.user_id === profileUser.user_id;
+    if (isOwnProfile) {
+      return res.redirect('/profile');
+    }
     
+    // get the most recent reviews
     const reviews = await getRecentReviews(profileUser.user_id);
 
+    // get the friend count
+    const friendCount = await getFriendCount(profileUser.user_id);
+
+    const viewerUserId = req.session.user?.user_id || null;
+
+    // check if users are friends
+    const isFriend = await checkIfFriends(viewerUserId, profileUser.user_id);
+    console.log("isFriend:", isFriend);
+    console.log("got here 2");
+
+    // check for pending status
+    let isPending = false;
+    if (!isFriend) {
+      isPending = await checkIfPending(viewerUserId, profileUser.user_id);
+      console.log("isPending:", isPending);
+    }
+    console.log("got here 3");
+
+    // render profile page
     return res.render('pages/profile', {
-      profileUser,
-      isOwnProfile,
-      reviews
+        user: req.session.user,
+        profileUser: profileUser,
+        isOwnProfile,
+        reviews: reviews,
+        friendCount: friendCount,
+        isFriend,
+        isPending
     });
+  
+  // catch any unexpected errors
   } catch (err) {
     return res.status(500).render('pages/profile', {
+      user: req.session.user,
       message: 'Something went wrong loading this profile.',
       profileUser: null,
       isOwnProfile: false,
+      reviews: [],
+      friendCount: 0,
     });
   }
 });
@@ -688,11 +884,15 @@ app.get('/song/:id', async (req, res) => {
     let loggedIn = !!req.session.user;
 
     const reviews = await db.any(
-      `SELECT r.*, u.username
-       FROM reviews r
-       JOIN users u ON r.user_id = u.user_id
-       WHERE r.song_id = $1
-       ORDER BY r.created_at DESC`,
+      `SELECT r.*, u.username,
+      COALESCE(SUM(CASE WHEN rr.reaction = 1 THEN 1 ELSE 0 END), 0) AS likes,
+      COALESCE(SUM(CASE WHEN rr.reaction = -1 THEN 1 ELSE 0 END), 0) AS dislikes
+      FROM reviews r
+      JOIN users u ON r.user_id = u.user_id
+      LEFT JOIN review_reactions rr ON rr.review_id = r.review_id
+      WHERE r.song_id = $1
+      GROUP BY r.review_id, u.username
+      ORDER BY r.created_at DESC;`,
       [songID]
     );
 
@@ -723,32 +923,46 @@ app.get('/song/:id', async (req, res) => {
       ratingLetter = convertRatingToLetter(songRating);
     }
 
-    //find user review (to change review button to an edit button)
+    //find user review and timestamp comment (to change review/comment button to an edit button)
     let userReview = null;
+    let userTimestampComment = null;
     if(req.session.user) 
     {
       userReview = reviews.find(
         r => r.user_id === req.session.user.user_id
       );
+
+      userTimestampComment = formattedComments.find(
+        c => c.user_id === req.session.user.user_id
+      );
     }
 
-    let userTimestampComment = null;
-    if(req.session.user)
-    {
-      console.log("search for user timestamp review will be here");
-    }
-
-    //user logged into spotify
+    //user logged into spotify and premium check
     let userLoggedIntoSpotify = false;
+    let spotifyPremium = false;
     if(req.session.spotifyAccessToken)
     {
       userLoggedIntoSpotify = true;
+      try 
+      {
+        const me = await axios({
+          url: "https://api.spotify.com/v1/me",
+          headers: {
+            Authorization: `Bearer ${req.session.spotifyAccessToken}`
+          }
+        });
+
+        spotifyPremium = me.data.product === "premium";
+      }
+      catch(err){
+        console.log("Spotify /me check failed:", err.message);
+      }
     }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImages, 
       time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: timestampComments, userReview: userReview, 
       userTimestampComment: userTimestampComment, songID: songID, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null,
-      userLoggedIntoSpotify: userLoggedIntoSpotify, isSongs: true 
+      userLoggedIntoSpotify: userLoggedIntoSpotify, spotifyPremium: spotifyPremium, isSongs: true 
     });
   })
   .catch(err => {
@@ -1037,39 +1251,109 @@ app.post('/addTimestampComment', auth, async (req, res) => {
   }
 });
 
+app.post('/reviewReact', auth, async (req, res) => {
+  const userId = req.session.user.user_id;
+  const {reviewId, reaction} = req.body;
+
+  try{
+    await db.none(`
+      INSERT INTO review_reactions (user_id, review_id, reaction)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id, review_id)
+      DO UPDATE SET reaction = EXCLUDED.reaction
+    `, [userId, reviewId, reaction]);
+
+    res.json({ success: true });
+  }catch (err){
+    console.error(err);
+    res.status(500).json({ error: "Failed to react to review" });
+  }
+});
+
 //can only access friends page if authenticated
 app.get('/friends', auth, async (req, res) => {
   const search = req.query.search ? req.query.search.trim() : '';
   const currentUserId = req.session.user?.user_id;
 
   try {
-    const query = `
-      SELECT user_id, username, DATE(created_at) AS created_at, COALESCE(user_image_url, '/resources/img/default-profile.png') AS user_image_url,
-             (SELECT COUNT(*) FROM follows WHERE followed_user_id = users.user_id) AS followers_count
-      FROM users
-      WHERE username ILIKE $1 AND user_id <> $2
-      ORDER BY username ASC
+    const values = [currentUserId || 0, `%${search}%`];
+
+    const friendsFirstQuery = `
+      -- determine relationship status with each user
+      -- relationship_rank orders friends first, then first-degree, then others
+      WITH relationship AS (
+        SELECT u.user_id,
+          EXISTS (
+            SELECT 1
+            FROM follows f
+            WHERE f.following_user_id = $1 AND f.followed_user_id = u.user_id
+          ) AS is_following,
+          EXISTS (
+            SELECT 1
+            FROM follows f
+            WHERE f.following_user_id = u.user_id AND f.followed_user_id = $1
+          ) AS follows_you
+        FROM users u
+        WHERE u.user_id <> $1
+      ),
+
+      -- get friend count from mutual follows
+      friend_totals AS (
+        SELECT
+          u.user_id,
+          COUNT(*)::int AS friend_count
+        FROM users u
+        JOIN follows f ON f.following_user_id = u.user_id
+        WHERE EXISTS (
+          SELECT 1
+          FROM follows r
+          WHERE r.following_user_id = f.followed_user_id
+            AND r.followed_user_id = u.user_id
+        )
+        GROUP BY u.user_id
+      ),
+
+      -- get follower totals
+      follower_totals AS (
+        SELECT
+          f.followed_user_id AS user_id,
+          COUNT(*)::int AS follower_count
+        FROM follows f
+        GROUP BY f.followed_user_id
+      )
+
+      -- create a list for handlebars
+      SELECT
+        u.user_id,
+        u.username,
+        COALESCE(TO_CHAR(u.created_at::date, 'Mon DD YYYY'), '') AS created_at, -- formatted join date
+        COALESCE(u.user_image_url, '/resources/img/default-profile.png') AS user_image_url, -- avatar fallback
+        COALESCE(ft.friend_count, 0) AS friend_count,
+        COALESCE(fot.follower_count, 0) AS follower_count,
+        rel.is_following AS "isFollowing", -- you follow them
+        (rel.is_following AND rel.follows_you) AS "isFriend", -- mutual followers
+        CASE
+          WHEN rel.is_following AND rel.follows_you THEN 0
+          WHEN rel.is_following OR rel.follows_you THEN 1
+          ELSE 2
+        END AS relationship_rank -- friends, first-degree, then others
+      FROM users u
+      JOIN relationship rel ON rel.user_id = u.user_id
+      LEFT JOIN friend_totals ft ON ft.user_id = u.user_id
+      LEFT JOIN follower_totals fot ON fot.user_id = u.user_id
+      WHERE u.username ILIKE $2
+      ORDER BY relationship_rank ASC, u.username ASC -- each group sorted A-Z
       LIMIT 20
     `;
 
-    // The value includes the wildcards
-    const values = [`%${search}%`, currentUserId || 0];
-
-    const users = await db.any(query, values);
-
-    const followQuery = `
-      SELECT followed_user_id
-      FROM follows
-      WHERE following_user_id = $1
-    `;
-
-    const followedRows = await db.any(followQuery, [currentUserId || 0]);
-    const followedIds = new Set(followedRows.map((row) => row.followed_user_id));
+    const users = await db.any(friendsFirstQuery, values);
 
     const usersDisplay = users.map((u) => ({
       ...u,
-      created_at: u.created_at,
-      isFollowing: followedIds.has(u.user_id),
+      friend_count: Number(u.friend_count) || 0,
+      follower_count: Number(u.follower_count) || 0,
+      isFollowing: Boolean(u.isFollowing),
+      isFriend: Boolean(u.isFriend),
     }));
 
     res.render('pages/friends', {
@@ -1091,7 +1375,7 @@ app.get('/friends', auth, async (req, res) => {
 
 app.post('/friends/add', async (req, res) => {
   const currentUserId = req.session.user?.user_id;
-  const { userId } = req.body;
+  const { userId, followedId } = req.body;
 
   if (!currentUserId) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -1107,6 +1391,10 @@ app.post('/friends/add', async (req, res) => {
        ON CONFLICT DO NOTHING`,
       [currentUserId, userId]
     );
+
+    if (followedId) {
+      return res.redirect('/profile/' + encodeURIComponent(followedId));
+    }
 
     res.redirect('/friends?search=' + encodeURIComponent(req.body.search || ''));
   } catch (err) {

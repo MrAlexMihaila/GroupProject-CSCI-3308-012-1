@@ -17,6 +17,7 @@
       <option value="track">Tracks</option>
       <option value="artist">Artists</option>
       <option value="album">Albums</option>
+      <option value="users">Users</option>
     </select>
 
     <!-- SEARCH ICON -->
@@ -95,42 +96,3 @@
         </div>
       {{/if}}
     </header>
-
-    <style>
-      .profile-card button:hover {
-        background-color: rgba(0, 0, 0, 0.05) !important;
-        border-radius: 8px;
-      }
-      
-      .profile-menu .dropdown-item:hover {
-        background-color: #f8f9fa;
-      }
-      
-      .profile-menu .dropdown-item:last-child {
-        border-bottom: none;
-      }
-      
-      .profile-menu .dropdown-item i {
-        margin-right: 8px;
-      }
-    </style>
-    
-    <!-- JavaScript to handle profile menu toggle and outside click -->
-    <script>
-      function toggleProfileMenu() {
-        const menu = document.getElementById('profileMenu');
-        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-      }
-      
-      // Close menu when clicking outside
-      document.addEventListener('click', function(event) {
-        const profileCard = document.querySelector('.profile-card');
-        const menu = document.getElementById('profileMenu');
-        
-        if (profileCard && !profileCard.contains(event.target)) {
-          if (menu) {
-            menu.style.display = 'none';
-          }
-        }
-      });
-    </script>

@@ -1,0 +1,27 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Users</h2>
+    <span class="text-muted small">{{user_list.length}} results</span>
+  </div>
+  <div class="row g-4">
+    {{#each user_list}}
+      <div class="col-2-4">
+        <a href="/profile/{{this.user_id}}" class="text-decoration-none text-dark">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body d-flex align-items-center gap-3">
+              <img 
+                src="/resources/img/default-profile.png" 
+                alt="{{this.username}}" 
+                style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;"
+              >
+              <div>
+                <div class="fw-semibold">{{this.username}}</div>
+                <div class="text-muted small">View Profile</div>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+    {{/each}}
+  </div>
+</div>
