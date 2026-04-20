@@ -76,7 +76,6 @@ async function handleSubmit()
     const review = makeReview();
 
     const res = await fetch('/addReview', {
-    const res = await fetch('/addReview', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
