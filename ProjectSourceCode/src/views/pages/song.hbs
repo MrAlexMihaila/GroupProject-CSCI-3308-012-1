@@ -162,7 +162,7 @@
 
         <!-- Body -->
         <div class="modal-body">
-            <form id="event_form" onsubmit="return handleSubmit();">
+            <form id="event_form" onsubmit="handleSubmit(); return false;">
                 <div class="mb-3">
                     <label for="review_rating" class="form-label">Rating</label>
                     <select class="form-select" id="review_rating">

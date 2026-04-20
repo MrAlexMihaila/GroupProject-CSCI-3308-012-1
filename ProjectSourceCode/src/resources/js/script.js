@@ -61,20 +61,19 @@ function makeAlbumReview()
 {
     return {
         albumID: document.getElementById("album-page").dataset.albumId,
-        rating: convertRatingToInt(document.getElementById("review_rating").value),
-        description: document.getElementById("review_description").value,
+        rating: convertRatingToInt(document.getElementById("album_review_rating").value),
+        description: document.getElementById("album_review_description").value,
         createdAt: new Date(),
         likes: 0,
         dislikes: 0
     };
-    
 }
 
 //handles getting review data, and then sending it to server for proper checks and adding to database
 async function handleSubmit() 
 {
     const review = makeReview();
-
+    
     const res = await fetch('/addReview', {
         method: 'POST',
         headers: {
@@ -99,6 +98,7 @@ async function handleSubmit()
 async function handleAlbumSubmit() 
 {
     const review = makeAlbumReview();
+    
     const res = await fetch('/addAlbumReview', {
         method: 'POST',
         headers: {
