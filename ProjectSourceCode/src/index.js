@@ -1139,6 +1139,9 @@ app.get('/friends', auth, async (req, res) => {
          -- you follow them
         rel.is_following AS "isFollowing",
 
+        -- they follow you
+        rel.follows_you AS "followsYou",
+
         -- mutual followers
         (rel.is_following AND rel.follows_you) AS "isFriend", 
         
@@ -1166,6 +1169,7 @@ app.get('/friends', auth, async (req, res) => {
       friend_count: Number(u.friend_count) || 0,
       follower_count: Number(u.follower_count) || 0,
       isFollowing: Boolean(u.isFollowing),
+      followsYou: Boolean(u.followsYou),
       isFriend: Boolean(u.isFriend),
     }));
 
