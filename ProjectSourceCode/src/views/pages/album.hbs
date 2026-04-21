@@ -6,6 +6,15 @@
                 <img src="{{albumImages.[0].url}}" class="img-fluid mb-3" alt="Album Art" />
             {{/if}}
 
+            <p>
+                <strong>Community Rating:</strong>
+                {{#if albumRating}}
+                    {{albumRating}}
+                {{else}}
+                    No ratings yet
+                {{/if}}
+            </p>
+
             <h4>{{name}}</h4>
 
             <p class="text-muted">
@@ -13,39 +22,72 @@
                 {{this.name}}{{#unless @last}}, {{/unless}}
                 {{/each}}
             </p>
-
-            {{#if login}}
-                <button class="btn btn-purple mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
-                    Add Review
-                </button>
-            {{else}}
-                <button class="btn btn-purple mt-3">
-                    Please login to add a review!
-                </button>
-            {{/if}}
         </div>
         <div class="col-md-7 p-4">
             <div class="row">
+                <!-- Reviews -->
+                <div class="col-md-6">
+                    <h5>Community Rating:</h5>
+                    {{#if reviews.length}}
+                        {{#each reviews}}
+                            <div class="border p-2 mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{username}}</strong>
+                                        <span class="ms-2">({{gradeFromRating rating}})</span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-outline-success like-btn" data-review-id="{{review_id}}">
+                                            👍 {{likes}}
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger dislike-btn" data-review-id="{{review_id}}">
+                                            👎 {{dislikes}}
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="mt-2 mb-0">{{review_text}}</p>
+                            </div>
+                        {{/each}}
+                    {{else}}
+                        <p>No ratings yet</p>
+                    {{/if}}
+
+                    {{#if login}}
+                        {{#if userReview}}
+                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
+                                Edit Review
+                            </button>
+                        {{else}}
+                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
+                                Add Review
+                            </button>
+                        {{/if}}
+                    {{/if}}
+                </div>
                 <!-- Tracks -->
                 <div class="col-md-6">
                     <h5>Tracks</h5>
                     <ul class="list-group">
                         {{#each tracks}}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <a href="/song/{{this.id}}" class="text-decoration-none">
-                                    {{this.name}}
-                                </a>
+                                <div>
+                                    <a href="/song/{{this.id}}" class="text-decoration-none">
+                                        {{this.name}}
+                                    </a>
+
+                                    {{#if this.rating}}
+                                        <span class="ms-2 badge bg-primary">
+                                            {{this.rating}}
+                                        </span>
+                                    {{/if}}
+                                </div>
+
                                 <span class="text-muted">
                                     {{this.formattedDuration}}
                                 </span>
                             </li>
                         {{/each}}
                     </ul>
-                </div>
-                <!-- Reviews -->
-                <div class="col-md-6">
-                    <h5>Community Ratings</h5>
-                    <p>Insert album reviews here</p>
                 </div>
             </div>
         </div>
@@ -64,28 +106,26 @@
 
             <!-- Body -->
             <div class="modal-body">
-                <form id="album_review_form" onsubmit="return handleSubmit();">
+                <form id="album_review_form" onsubmit="handleAlbumSubmit(); return false;">
 
                     <div class="mb-3">
                         <label for="review_rating" class="form-label">Rating</label>
-                        <select class="form-select" id="review_rating">
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                            <option value="D">D</option>
-                            <option value="E">E</option>
-                            <option value="F">F</option>
+                        <select class="form-select" id="album_review_rating">
+                            <option value="rating_a">A</option>
+                            <option value="rating_b">B</option>
+                            <option value="rating_c">C</option>
+                            <option value="rating_d">D</option>
+                            <option value="rating_e">E</option>
+                            <option value="rating_f">F</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
                         <label for="review_description" class="form-label">Review Description</label>
                         <input type="text" class="form-control"
-                            id="review_description"
-                            placeholder="Write your review here, if you want!">
+                            id="album_review_description"
+                            value="{{userReview.review_text}}">
                     </div>
-
-                    <input type="hidden" id="album_id" value="{{albumID}}" />
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary"

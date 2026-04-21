@@ -57,11 +57,23 @@ function makeReview()
     };
 }
 
+function makeAlbumReview()
+{
+    return {
+        albumID: document.getElementById("album-page").dataset.albumId,
+        rating: convertRatingToInt(document.getElementById("album_review_rating").value),
+        description: document.getElementById("album_review_description").value,
+        createdAt: new Date(),
+        likes: 0,
+        dislikes: 0
+    };
+}
+
 //handles getting review data, and then sending it to server for proper checks and adding to database
 async function handleSubmit() 
 {
     const review = makeReview();
-
+    
     const res = await fetch('/addReview', {
         method: 'POST',
         headers: {
@@ -78,6 +90,31 @@ async function handleSubmit()
     else 
     {
         alert("Something went wrong with your review. Please try again.");
+    }
+
+    return false;
+}
+
+async function handleAlbumSubmit() 
+{
+    const review = makeAlbumReview();
+    
+    const res = await fetch('/addAlbumReview', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(review)
+    });
+    console.log("Response status:", res.status);
+
+    if(res.ok)
+    {
+        window.location.reload();
+    }
+    else 
+    {
+        alert("Something went wrong with your album review. Please try again.");
     }
 
     return false;

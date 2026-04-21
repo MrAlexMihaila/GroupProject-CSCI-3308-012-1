@@ -425,7 +425,7 @@ app.post('/register', async (req, res) => {
       // Any other registration error should still respond (prevents request timeouts).
       return res.status(400).json({ message: 'Failed to register!'});
     } catch(err) {
-      //console.log("Database Error:", err.message || err);
+    //console.log("Database Error:", err.message || err);
       return res.status(400).json({ message: 'Failed to register!'});
     }
   }
@@ -1057,7 +1057,8 @@ app.get('/song/:id', async (req, res) => {
           name: localSong.title,
           artists: artists,
           album: {
-            images: localSong.image_url ? [{ url: localSong.image_url }] : []
+            images: response.data.album.images,
+            album_id: response.data.album.id
           },
           uri: response.data.uri,
           duration_ms: (localSong.duration || 0) * 1000
@@ -1083,7 +1084,7 @@ app.get('/song/:id', async (req, res) => {
   songPromise.then(async response => {
     const songName = response.data.name;
     const artistsArray = response.data.artists;
-    const songAlbumImage = response.data.album.images;
+    const songAlbumImages = response.data.album.images;
     const songURI = response.data.uri;
 
     const totalSeconds = Math.floor(response.data.duration_ms / 1000);
@@ -1170,8 +1171,8 @@ app.get('/song/:id', async (req, res) => {
       }
     }
     
-    res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImage, 
-      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: formattedComments, userReview: userReview, 
+    res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImages, albumId: response.data.album.id,
+      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: timestampComments, userReview: userReview, 
       userTimestampComment: userTimestampComment, songID: songID, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null,
       userLoggedIntoSpotify: userLoggedIntoSpotify, spotifyPremium: spotifyPremium, isSongs: true 
     });
@@ -1196,31 +1197,76 @@ app.get('/albums_tab/:id', async (req, res) => {
   
     const albumName = response.data.name;
     const artistsArray = response.data.artists;
-    const albumImage = response.data.images;
-    const tracksArray = response.data.tracks.items.map(track => {
-      // map time to minutes and seconds
-      const totalSeconds = Math.floor(track.duration_ms / 1000);
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      return {
-        ...track,
-        formattedDuration: `${minutes}:${seconds.toString().padStart(2, '0')}`
-      };
-    });
+    const albumImages = response.data.images;
+    const tracksArray = response.data.tracks.items;
 
     let loggedIn = !!req.session.user;
+    
+    // get album reviews
+    const reviews = await db.any(
+      `SELECT r.*, u.username,
+      COALESCE(SUM(CASE WHEN rr.reaction = 1 THEN 1 ELSE 0 END), 0) AS likes,
+      COALESCE(SUM(CASE WHEN rr.reaction = -1 THEN 1 ELSE 0 END), 0) AS dislikes
+      FROM reviews r
+      JOIN users u ON r.user_id = u.user_id
+      LEFT JOIN review_reactions rr ON rr.review_id = r.review_id
+      WHERE r.album_id = $1
+      GROUP BY r.review_id, u.username
+      ORDER BY r.created_at DESC`,
+      [albumID]
+    );
 
-    //code to calculate rating number will go here once we get database set up
-    //will just pass a dummy value for now
-    let albumRating = 3.0; //out of 5 "stars"
+    // calculate average rating
+    let albumRating = null;
+    let ratingLetter = "No Reviews";
+
+    if (reviews.length > 0) {
+      const total = reviews.reduce((sum, r) => sum + r.rating, 0);
+      albumRating = total / reviews.length;
+      ratingLetter = convertRatingToLetter(albumRating);
+    }
+
+    // get all track IDs
+    const trackIDs = tracksArray.map(t => t.id);
+
+    // fetch ratings from DB
+    const songRatings = await db.any(
+      `SELECT song_id, AVG(rating) as avg_rating
+      FROM reviews
+      WHERE song_id = ANY($1)
+      GROUP BY song_id`,
+      [trackIDs]
+    );
+
+    // convert to lookup map
+    const ratingMap = {};
+    songRatings.forEach(r => {
+      ratingMap[r.song_id] = convertRatingToLetter(r.avg_rating);
+    });
+
+    // attach rating to each track
+    const tracksWithRatings = tracksArray.map(track => ({
+      ...track,
+      rating: ratingMap[track.id] || null
+    }));
+
+    // find current user's review
+    let userReview = null;
+    if (req.session.user) {
+      userReview = reviews.find(
+        r => r.user_id === req.session.user.user_id
+      );
+    }
     
     res.render('pages/album', {
       name: albumName,
       artists: artistsArray,
-      albumImages: albumImage,
-      tracks: tracksArray,
+      albumImages: albumImages,
+      tracks: tracksWithRatings,
       login: loggedIn,
-      albumRating: albumRating,
+      albumRating: ratingLetter,
+      reviews: reviews,
+      userReview: userReview,
       albumID: albumID,
       isAlbums: true
     });
@@ -1330,6 +1376,7 @@ app.post('/addAlbumReview', auth, async (req, res) => {
     const releaseDate = album.release_date;
     const image = album.images?.[0]?.url ?? null;
 
+    // insert album to sql table
     await db.none(
       `INSERT INTO albums (album_id, title, release_date, image_url)
        VALUES ($1, $2, $3, $4)
@@ -1348,8 +1395,10 @@ app.post('/addAlbumReview', auth, async (req, res) => {
          updated_at = CURRENT_TIMESTAMP;`,
       [userId, albumID, rating, description]
     );
+    console.log([userId, albumID, rating, description]);
 
     return res.status(200).json({ success: true });
+
   } catch (err) {
     console.log("error inserting album review into database", err.message);
     return res.status(500).json({
