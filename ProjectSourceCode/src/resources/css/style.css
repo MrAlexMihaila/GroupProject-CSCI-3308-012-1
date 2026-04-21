@@ -273,6 +273,14 @@ body {
     background-color: #f3e5f5 !important; /* Light purple tint to match nav */
 }
 
+html.dark-mode .profile-card button:hover {
+  background-color: #3a3a3a !important;
+}
+
+html.dark-mode .profile-card button:hover .text-dark {
+  color: #ffffff !important;
+}
+
 #profileMenu {
     border: 1px solid #e5e7eb;
     border-radius: 12px;
