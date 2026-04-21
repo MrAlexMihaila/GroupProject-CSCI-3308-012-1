@@ -69,6 +69,32 @@ const hbs = handlebars.create({
   partialsDir: __dirname + '/views/partials',
 });
 
+// Cloudinary configuration for image uploads
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+});
+
+// multer configuration for handling profile picture uploads
+// The uploaded images will be stored in 'resources/img/uploads/' directory temporarily before being uploaded to Cloudinary and then deleted from the server
+// Limits the file size to 5MB and only allows JPEG, PNG, WebP, and GIF image formats for profile pictures
+const multer = require('multer');
+const upload = multer({ 
+    dest: 'resources/img/uploads/',
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+      const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (allowed.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only JPEG, PNG, WebP, and GIF images are allowed'));
+      }
+    }
+}); // temp disk storage
+
 // Helper functions for handlebars
 Handlebars.registerHelper('mod', function(a, b) {
   return a % b;
@@ -329,7 +355,8 @@ app.post('/login', async (req, res) => {
 
   try {
     const user = await db.oneOrNone(
-      `SELECT * FROM users WHERE username = $1`, [username]
+      `SELECT user_id, username, password_hash, user_image_url FROM users WHERE username = $1`,
+      [username]
     );
 
     if(!user) //user not found
@@ -345,7 +372,11 @@ app.post('/login', async (req, res) => {
       return res.render('pages/login', {message: 'Incorrect Username or password!'});
     }
 
-    req.session.user = user;
+    req.session.user = {
+      user_id: user.user_id,
+      username: user.username,
+      user_image_url: user.user_image_url,
+    };
     req.session.save();
     
     res.redirect('/home'); //default, probably change
@@ -766,6 +797,7 @@ app.get('/profile', auth, async (req, res) => {
   const reviews = await getRecentReviews(req.session.user.user_id);
   const friendCount = await getFriendCount(req.session.user.user_id);
   const followerCount = await getFollowerCount(req.session.user.user_id);
+
   res.render('pages/profile', {
     user: req.session.user,
     profileUser: req.session.user,
@@ -796,7 +828,7 @@ app.get('/profile/:userid', async (req, res) => {
   try {
     // query user id from database
     const profileUser = await db.oneOrNone(
-      'SELECT user_id, username FROM users WHERE user_id = $1',
+      'SELECT user_id, username, user_image_url FROM users WHERE user_id = $1',
       [userId]
     );
 
@@ -818,21 +850,15 @@ app.get('/profile/:userid', async (req, res) => {
       return res.redirect('/profile');
     }
     
-    // get the most recent reviews
+    // get profile information for other user
     const reviews = await getRecentReviews(profileUser.user_id);
-
-    // get the friend count
     const friendCount = await getFriendCount(profileUser.user_id);
-
-    // get the follower count
     const followerCount = await getFollowerCount(profileUser.user_id);
 
     const viewerUserId = req.session.user?.user_id || null;
 
-    // check if users are friends
+    // check if users are friends or if viewer is following
     const isFriend = await checkIfFriends(viewerUserId, profileUser.user_id);
-
-    // check if following status
     const isFollowing = await checkIfFollowing(viewerUserId, profileUser.user_id);
 
     // render profile page
@@ -856,6 +882,130 @@ app.get('/profile/:userid', async (req, res) => {
       isOwnProfile: false,
       reviews: [],
       friendCount: 0,
+    });
+  }
+});
+
+// profile picture upload route
+app.post('/profile/upload-image', (req, res, next) => {
+  // handle image upload errors seperately
+  upload.single('image')(req, res, async (err) => {
+    if (!req.session.user) {
+      return res.status(401).render('pages/profile', {
+        user: null,
+        message: 'You must be logged in to upload a profile picture.',
+        profileUser: null,
+        isOwnProfile: false,
+        reviews: [],
+        friendCount: 0,
+        followerCount: 0,
+      });
+    }
+
+    // file too large
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {      
+      // we still want to show profile context with the validation message
+      const reviews = await getRecentReviews(req.session.user.user_id);
+      const friendCount = await getFriendCount(req.session.user.user_id);
+      const followerCount = await getFollowerCount(req.session.user.user_id);
+      
+      return res.status(400).render('pages/profile', {
+        user: req.session.user,
+        message: 'Image must be under 5MB.',
+        profileUser: req.session.user,
+        isOwnProfile: true,
+        reviews,
+        friendCount,
+        followerCount
+      });
+    }
+
+    // invalid file type or other multer error
+    if (err) {
+      const reviews = await getRecentReviews(req.session.user.user_id);
+      const friendCount = await getFriendCount(req.session.user.user_id);
+      const followerCount = await getFollowerCount(req.session.user.user_id);
+
+      return res.status(400).render('pages/profile', {
+        user: req.session.user,
+        message: err.message,
+        profileUser: req.session.user,
+        isOwnProfile: true,
+        reviews,
+        friendCount,
+        followerCount
+      });
+    }
+
+    next();
+  });
+  
+}, async (req, res) => {
+  // check user is logged in
+  if (!req.session.user) {
+    return res.status(401).render('pages/profile', {
+      user: null,
+      message: 'You must be logged in to upload a profile picture.',
+      profileUser: null,
+      isOwnProfile: false,
+      reviews: [],
+      friendCount: 0
+    });
+  }
+  // check a file was actually attached
+  if (!req.file) {
+    return res.status(400).render('pages/profile', {
+      user: req.session.user,
+      message: 'No image file provided.',
+      profileUser: null,
+      isOwnProfile: false,
+      reviews: [],
+      friendCount: 0
+    });
+  }
+  try {
+    // upload the temp file to cloudinary
+    const options = {
+      use_filename: true,
+      unique_filename: false,
+      overwrite: true,
+      folder: 'profile_pictures',
+      transformation: [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }]
+    };
+    const result = await cloudinary.uploader.upload(req.file.path, options);
+
+    // delete the temp file from disk after upload
+    const fs = require('fs');
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error('Failed to delete temp file:', err);
+    });
+
+    // save the cloudinary url to the database
+    await db.none(
+      'UPDATE users SET user_image_url = $1 WHERE user_id = $2',
+      [result.secure_url, req.session.user.user_id]
+    );
+
+    // update the session so the new image shows immediately
+    req.session.user.user_image_url = result.secure_url;
+    await new Promise((resolve, reject) => {
+      req.session.save((saveErr) => {
+        if (saveErr) return reject(saveErr);
+        resolve();
+      });
+    });
+
+    return res.redirect('/profile');
+
+  // catch any unexpected errors
+  } catch (err) {
+    return res.status(500).render('pages/profile', {
+      user: req.session.user,
+      message: 'Something went wrong uploading your image.',
+      profileUser: null,
+      isOwnProfile: false,
+      reviews: [],
+      friendCount: 0
     });
   }
 });

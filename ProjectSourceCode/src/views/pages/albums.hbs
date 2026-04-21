@@ -9,7 +9,7 @@
 
   <div class="mb-3">
     <h3 class="mb-2 position-sticky sticky-header" style="top:0; z-index:1;">Top Albums</h3>
-    <div class="row-scroll row-1">
+    <div class="row-scroll albums-row-scroll row-1">
       {{#each topAlbums}}
         <div class="col-2-4">
           {{> album_card}}
@@ -20,7 +20,7 @@
 
   <div>
     <h3 class="mb-2 position-sticky sticky-header" style="top:0; z-index:1;">Greatest Hits</h3>
-    <div class="row-scroll row-4">
+    <div class="row-scroll albums-row-scroll row-4">
       {{#each popularAlbums}}
         <div class="col-2-4">
           {{> album_card}}

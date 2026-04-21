@@ -237,25 +237,28 @@ document.addEventListener("DOMContentLoaded", () => {
         playerInstance.seek(newPosition);
     });
 
-    document.getElementById("timestampCommentID").addEventListener("click", async (e) => {
-        if(!playerInstance)
-        {
-            return;
-        }
+    const timestampCommentButton = document.getElementById("timestampCommentID");
+    if (timestampCommentButton) {
+        timestampCommentButton.addEventListener("click", async () => {
+            if(!playerInstance)
+            {
+                return;
+            }
 
-        const state = await playerInstance.getCurrentState();
-        if(!state)
-        {
-            return;
-        }
+            const state = await playerInstance.getCurrentState();
+            if(!state)
+            {
+                return;
+            }
 
-        playerTimestampPosition = state.position/1000;
-        const displayField = document.getElementById("timestamp_display");
-        if(displayField)
-        {
-            displayField.value = formatTime(playerTimestampPosition);
-        }
-    });
+            playerTimestampPosition = state.position/1000;
+            const displayField = document.getElementById("timestamp_display");
+            if(displayField)
+            {
+                displayField.value = formatTime(playerTimestampPosition);
+            }
+        });
+    }
 
     //make it to where clicking all timestamp comments move the player
     //to the timestamp position
@@ -268,6 +271,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerInstance.seek(seconds * 1000);
             }
         });
+    });
+
+    // Allow vertical mouse-wheel gestures to scroll horizontal media rows
+    document.querySelectorAll('.songs-row-scroll, .albums-row-scroll').forEach((row) => {
+        row.addEventListener('wheel', (e) => {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                e.preventDefault();
+                row.scrollLeft += e.deltaY;
+            }
+        }, { passive: false });
     });
 });
 
