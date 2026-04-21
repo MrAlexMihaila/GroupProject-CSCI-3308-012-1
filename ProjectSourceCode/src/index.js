@@ -1172,7 +1172,7 @@ app.get('/song/:id', async (req, res) => {
     }
     
     res.render('pages/song', {name: songName, artists: artistsArray, albumImages: songAlbumImages, albumId: response.data.album.id,
-      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: timestampComments, userReview: userReview, 
+      time: formattedTime, login: loggedIn, songRating: ratingLetter, reviews: reviews, timestampComments: formattedComments, userReview: userReview, 
       userTimestampComment: userTimestampComment, songID: songID, songURI: songURI, spotifyToken: req.session.spotifyAccessToken || null,
       userLoggedIntoSpotify: userLoggedIntoSpotify, spotifyPremium: spotifyPremium, isSongs: true 
     });
