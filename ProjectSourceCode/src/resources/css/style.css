@@ -940,6 +940,10 @@ html.dark-mode .container-fluid .form-control::placeholder {
     color: #888 !important;
 }
 
+html.dark-mode .modal .form-control::placeholder {
+  color: #b8b8b8 !important;
+}
+
 html.dark-mode .player-container {
     background: linear-gradient(145deg, #2d2d2d, #252525) !important;
     color: #e0e0e0;
