@@ -68,19 +68,19 @@
           <div id="profileMenu" style="display: none; position: absolute; bottom: 100%; left: 0; right: 0; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-bottom: 8px;">
             {{#if userLoggedIntoSpotify}}
               <a class="dropdown-item d-flex align-items-center" roll="button">
-                <img src="/resources/img/spotify.png" alt="Spotify" class="me-2" style="width: 16px; height: 16px; object-fit: contain; flex-shrink: 0;">Connected With Spotify
+                <img src="/resources/img/spotify.png" alt="Spotify" class="me-2" style="width: 18px; height: 18px; object-fit: contain; flex-shrink: 0;">Connected With Spotify
               </a>
             {{else}}
               <a class="dropdown-item d-flex align-items-center" href="/spotify-login" roll="button">
-                <img src="/resources/img/spotify.png" alt="Spotify" class="me-2" style="width: 16px; height: 16px; object-fit: contain; flex-shrink: 0;">Connect With Spotify
+                <img src="/resources/img/spotify.png" alt="Spotify" class="me-2" style="width: 18px; height: 18px; object-fit: contain; flex-shrink: 0;">Connect With Spotify
               </a>
             {{/if}}
             
             <a href="/profile" class="dropdown-item d-flex align-items-center">
-              <i class="bi bi-person"></i> Profile
+              <i class="bi bi-person me-2" style="font-size: 18px;"></i> Profile
             </a>
             <a href="/logout" class="dropdown-item d-flex align-items-center dropdown-item-logout">
-              <i class="bi bi-box-arrow-right"></i> Logout
+              <i class="bi bi-box-arrow-right me-2" style="font-size: 18px;"></i> Logout
             </a>
           </div>
           

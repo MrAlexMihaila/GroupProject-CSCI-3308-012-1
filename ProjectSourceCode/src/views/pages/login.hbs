@@ -3,11 +3,11 @@
 <div class="container mt-5" style="max-width: 500px; margin-left: auto; margin-right: auto;">
     <h1 class="text-center mb-4">Login</h1>
     {{> message message=message}}
-    <form action="/login" method="POST">
+    <form action="/login" method="POST" autocomplete="off">
         <div class="mb-3">
             <label for="username" class="form-label">Username</label>
-            <input type="text" class="form-control" name="username" id="username" required>
-        </div>
+            <input type="text" class="form-control" name="username" id="username" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+        </div> 
 
         <div class="mb-3">
             <label for="password" class="form-label">Password</label>
