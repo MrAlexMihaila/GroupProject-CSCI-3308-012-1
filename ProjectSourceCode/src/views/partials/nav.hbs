@@ -78,11 +78,11 @@
               </a>
             {{/if}}
             
-            <a href="/profile" class="dropdown-item">
-              <i class="bi bi-person"></i> Profile
+            <a href="/profile" class="dropdown-item d-flex align-items-center">
+              <i class="bi bi-person me-2" style="font-size: 18px;"></i> Profile
             </a>
-            <a href="/logout" class="dropdown-item dropdown-item-logout">
-              <i class="bi bi-box-arrow-right"></i> Logout
+            <a href="/logout" class="dropdown-item d-flex align-items-center dropdown-item-logout">
+              <i class="bi bi-box-arrow-right me-2" style="font-size: 18px;"></i> Logout
             </a>
           </div>
           
@@ -92,7 +92,7 @@
             onclick="toggleProfileMenu()"
           >
             <img 
-              src="/resources/img/default-profile.png" 
+              src="{{#if user.user_image_url}}{{user.user_image_url}}{{else}}/resources/img/default-profile.png{{/if}}"
               alt="Profile" 
               class="profile-pic" 
               style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; flex-shrink: 0;"
