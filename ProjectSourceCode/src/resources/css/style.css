@@ -241,6 +241,22 @@ body {
   scrollbar-width: none;
 }
 
+.songs-scroll-container {
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.songs-row-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.songs-row-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .row-scroll::-webkit-scrollbar {
   display: none;
 }
