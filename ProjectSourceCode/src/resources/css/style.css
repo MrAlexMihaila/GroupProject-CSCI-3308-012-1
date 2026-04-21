@@ -214,6 +214,7 @@ html.dark-mode .genre-search-form .form-control::placeholder {
 .song-card {
   transition: all 0.2s ease;
   border-radius: 12px;
+  overflow: hidden;
 }
 
 .song-card:hover {
