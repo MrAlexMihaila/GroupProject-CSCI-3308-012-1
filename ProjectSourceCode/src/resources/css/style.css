@@ -253,7 +253,17 @@ body {
   -ms-overflow-style: none;
 }
 
+.albums-row-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 .songs-row-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.albums-row-scroll::-webkit-scrollbar {
   display: none;
 }
 

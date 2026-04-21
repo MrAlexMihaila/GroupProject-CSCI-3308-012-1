@@ -236,8 +236,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Allow vertical mouse-wheel gestures to scroll song rows horizontally.
-    document.querySelectorAll('.songs-row-scroll').forEach((row) => {
+    // Allow vertical mouse-wheel gestures to scroll horizontal media rows
+    document.querySelectorAll('.songs-row-scroll, .albums-row-scroll').forEach((row) => {
         row.addEventListener('wheel', (e) => {
             if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
                 e.preventDefault();
