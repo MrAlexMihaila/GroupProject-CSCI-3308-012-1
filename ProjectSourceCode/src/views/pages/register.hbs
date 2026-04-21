@@ -6,15 +6,15 @@
       <div class="alert alert-warning" role="alert">{{message}}</div>
     {{/if}}
 
-    <form action="/register" method="POST">
+    <form action="/register" method="POST" autocomplete="off">
         <div class="mb-3">
             <label for="username" class="form-label">Username</label>
-            <input type="text" class="form-control" name="username" id="username" required>
+            <input type="text" class="form-control" name="username" id="username" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" required>
         </div>
 
         <div class="mb-3">
             <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control" name="password" id="password" required>
+            <input type="password" class="form-control" name="password" id="password" autocomplete="new-password" required>
         </div>
 
         <button type="submit" class="btn btn-outline-purple w-100 rounded-pill fw-bold">Register</button>
