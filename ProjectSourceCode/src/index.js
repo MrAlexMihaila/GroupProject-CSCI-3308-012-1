@@ -992,10 +992,14 @@ app.get('/albums_tab/:id', async (req, res) => {
 
     // get album reviews
     const reviews = await db.any(
-      `SELECT r.*, u.username
+      `SELECT r.*, u.username,
+      COALESCE(SUM(CASE WHEN rr.reaction = 1 THEN 1 ELSE 0 END), 0) AS likes,
+      COALESCE(SUM(CASE WHEN rr.reaction = -1 THEN 1 ELSE 0 END), 0) AS dislikes
       FROM reviews r
       JOIN users u ON r.user_id = u.user_id
+      LEFT JOIN review_reactions rr ON rr.review_id = r.review_id
       WHERE r.album_id = $1
+      GROUP BY r.review_id, u.username
       ORDER BY r.created_at DESC`,
       [albumID]
     );
