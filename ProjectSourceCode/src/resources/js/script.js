@@ -193,17 +193,26 @@ document.getElementById("play-toggle")?.addEventListener("click", async () => {
     {
         return;
     }
+
+    const icon = document.querySelector("#play-toggle i");
+
     if(isPlaying)
     {
         await playerInstance.pause();
         isPlaying = false;
-        document.getElementById("play-toggle").textContent = "▶";
+        if(icon)
+        {
+            icon.className = "bi bi-play-fill";
+        }
     } 
     else
     {
         await playerInstance.resume();
         isPlaying = true;
-        document.getElementById("play-toggle").textContent = "⏸";
+        if(icon)
+        {
+            icon.className = "bi bi-pause-fill";
+        }
     }
 });
 
@@ -308,6 +317,8 @@ setInterval(async () => {
 
     document.getElementById("seek-bar").value = percent;
 
+    document.getElementById("seek-bar").style.background = `linear-gradient(to right, #6f42c1 0%, #6f42c1 ${percent}%, #e9ecef ${percent}%, #e9ecef 100%)`;
+
     const seconds = Math.floor(position / 1000);
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -321,7 +332,7 @@ window.onSpotifyWebPlaybackSDKReady = () =>
 {
     if(document.getElementById("song-page"))
     {
-        console.log("SONG TAB PAGE!!!");
+        //console.log("SONG TAB PAGE!!!");
 
         const token = SPOTIFY_TOKEN;
 
@@ -342,7 +353,7 @@ window.onSpotifyWebPlaybackSDKReady = () =>
 
         player.addListener('ready', ({ device_id }) => 
         {
-            console.log('Ready with Device ID', device_id);
+            //console.log('Ready with Device ID', device_id);
             setupPlayback(device_id, token);
         });
 
@@ -380,6 +391,10 @@ function setupPlayback(device_id, token)
                 'Authorization': `Bearer ${token}`
                 },
             });
+
+            isPlaying = true;
+            const icon = document.querySelector("#play-toggle i");
+            icon.className = "bi bi-pause-fill";
         } catch(err)
         {
             console.log(err);
@@ -390,6 +405,33 @@ function setupPlayback(device_id, token)
     });
 }
 
+// Dark Mode Toggle
+function initDarkMode() {
+  const darkModeToggle = document.getElementById('darkModeToggle');
+
+  // Load dark mode preference from localStorage
+  const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
+  if (isDarkMode) {
+    document.documentElement.classList.add('dark-mode');
+  }
+
+  // Toggle dark mode on button click
+  if (darkModeToggle) {
+    darkModeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark-mode');
+      
+      // Update localStorage
+      if (document.documentElement.classList.contains('dark-mode')) {
+        localStorage.setItem('darkMode', 'enabled');
+      } else {
+        localStorage.setItem('darkMode', 'disabled');
+      }
+    });
+  }
+}
+
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', initDarkMode);
 // Handles profile menu clicking and toggling
 function toggleProfileMenu() {
     const menu = document.getElementById('profileMenu');

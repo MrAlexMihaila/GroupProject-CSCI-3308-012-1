@@ -10,14 +10,15 @@
         value="{{search}}"
         aria-label="Search friends"
       />
-      <button class="btn btn-outline-primary" type="submit">Search</button>
+      <button class="btn btn-purple" type="submit">Search</button>
     </form>
   </div>
 
   {{#if users}}
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
       {{#each users}}
-        {{> friend_card}}
+        <!-- Pass the user info and search term to the friend_card partial -->
+        {{> friend_card search=../search}}
       {{/each}}
     </div>
   {{else}}
