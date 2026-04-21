@@ -214,6 +214,7 @@ html.dark-mode .genre-search-form .form-control::placeholder {
 .song-card {
   transition: all 0.2s ease;
   border-radius: 12px;
+  overflow: hidden;
 }
 
 .song-card:hover {
@@ -238,6 +239,32 @@ body {
   -webkit-overflow-scrolling: touch;
   margin-left: 10px;
   scrollbar-width: none;
+}
+
+.songs-scroll-container {
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.songs-row-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.albums-row-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.songs-row-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.albums-row-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .row-scroll::-webkit-scrollbar {
@@ -271,6 +298,14 @@ body {
 
 .profile-card button:hover {
     background-color: #f3e5f5 !important; /* Light purple tint to match nav */
+}
+
+html.dark-mode .profile-card button:hover {
+  background-color: #3a3a3a !important;
+}
+
+html.dark-mode .profile-card button:hover .text-dark {
+  color: #ffffff !important;
 }
 
 #profileMenu {
@@ -639,7 +674,7 @@ html.dark-mode h6 {
 }
 
 html.dark-mode .sticky-header {
-  background-color: #2d2d2d;
+  background-color: #1a1a1a;
   color: #e0e0e0;
 }
 
@@ -903,6 +938,10 @@ html.dark-mode .container-fluid .form-control {
 
 html.dark-mode .container-fluid .form-control::placeholder {
     color: #888 !important;
+}
+
+html.dark-mode .modal .form-control::placeholder {
+  color: #b8b8b8 !important;
 }
 
 html.dark-mode .player-container {
