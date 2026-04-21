@@ -15,5 +15,12 @@
 
   <!-- for icons, using bootstrap -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+  <script>
+    // apply dark mode
+    if (localStorage.getItem('darkMode') === 'enabled') {
+      document.documentElement.classList.add('dark-mode');
+    }
+  </script>
 </head>
-<body class="h-100 d-flex">
+<body class="h-100 d-flex{{#if darkMode}} dark-mode{{/if}}">

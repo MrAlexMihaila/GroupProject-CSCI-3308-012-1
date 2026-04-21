@@ -1,7 +1,7 @@
 <header>
   <div class="d-flex flex-column flex-shrink-0 p-3 bg-light" style="width: 280px; height: 100vh; position: fixed; top: 0; left: 0;">
     <a href="/" class="d-flex justify-content-center w-100 text-decoration-none link-dark">
-      <i class="bi bi-card-image"></i>
+      <i class="bi bi-music-note-beamed"></i>
       <div class="d-flex flex-column align-items-center text-center">
         <span class="fs-4">ATrack</span>
         <small class="logo-subtext text-muted" style="margin-top: -4px;">for music</small>
@@ -13,14 +13,15 @@
   <div class="input-group">
 
     <!-- DROPDOWN -->
-    <select name="type" class="form-select px-2" style="max-width: 90px; background-color: #dee2e6" >
+    <select name="type" class="form-select px-2 search-dropdown" style="max-width: 90px;">
       <option value="track">Tracks</option>
       <option value="artist">Artists</option>
       <option value="album">Albums</option>
+      <option value="users">Users</option>
     </select>
 
     <!-- SEARCH ICON -->
-    <span class="input-group-text bg-white border-start-0 border-end-0">
+    <span class="input-group-text search-icon border-start-0 border-end-0">
       <i class="bi bi-search"></i>
     </span>
 
@@ -63,16 +64,21 @@
     </a>
   </li>
 </ul>
+<div class="d-flex w-100 justify-content-center mb-3">
+  <button id="darkModeToggle" class="btn btn-dark dark-mode-btn p-0 d-flex align-items-center justify-content-center">
+    <i class="bi bi-moon-fill"></i>
+  </button>
+</div>
       {{#if user}}
         <div class="profile-card" style="position: relative;">
-          <div id="profileMenu" style="display: none; position: absolute; bottom: 100%; left: 0; right: 0; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 -2px 8px rgba(0,0,0,0.1); z-index: 1000; margin-bottom: 8px;">
+          <div id="profileMenu" style="display: none; position: absolute; bottom: 100%; left: 0; right: 0; z-index: 1000; margin-bottom: 8px;" class="profile-menu-dropdown">
             {{#if userLoggedIntoSpotify}}
-              <a class="dropdown-item d-flex align-items-center" roll="button">
-                <img src="/resources/img/spotify.png" alt="Spotify" class="me-2" style="width: 18px; height: 18px; object-fit: contain; flex-shrink: 0;">Connected With Spotify
+              <a class="dropdown-item" roll="button">
+                <i class="bi bi-spotify"></i>Connected With Spotify
               </a>
             {{else}}
-              <a class="dropdown-item d-flex align-items-center" href="/spotify-login" roll="button">
-                <img src="/resources/img/spotify.png" alt="Spotify" class="me-2" style="width: 18px; height: 18px; object-fit: contain; flex-shrink: 0;">Connect With Spotify
+              <a class="dropdown-item" href="/spotify-login" roll="button">
+                <i class="bi bi-spotify"></i>Connect With Spotify
               </a>
             {{/if}}
             
@@ -100,8 +106,8 @@
         </div>
       {{else}}
         <div class="d-grid gap-2">
-          <a class="btn btn-outline-primary" href="/login" role="button">Log In</a>
-          <a class="btn btn-primary" href="/register" role="button">Sign Up Free</a>
+          <a class="btn btn-outline-purple w-100 rounded-pill fw-bold" href="/login" role="button">Log In</a>
+          <a class="btn btn-purple w-100 rounded-pill " href="/register" role="button">Sign Up Free</a>
         </div>
       {{/if}}
     </header>

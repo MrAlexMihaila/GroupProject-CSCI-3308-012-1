@@ -1,5 +1,6 @@
 let playerInstance = null;
 let playerTimestampPosition = 0;
+let isPlaying = false;
 
 //converts a passed string into a rating number
 function convertRatingToInt(ratingLetter)
@@ -35,6 +36,14 @@ function convertRatingToInt(ratingLetter)
     }
 }
 
+//format the time into the proper format
+function formatTime(seconds)
+{
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 //get all the information from the review modal, except for song id and user info
 function makeReview() 
 {
@@ -53,7 +62,7 @@ async function handleSubmit()
 {
     const review = makeReview();
 
-    await fetch('/addReview', {
+    const res = await fetch('/addReview', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -84,31 +93,56 @@ function makeTimestampComment()
     }
 }
 
-//dummy function for now, will actually implement later
+//logic for adding timestamp comment to server
 async function addTimestampComment() 
 {
     const comment = makeTimestampComment();
-    console.log(comment);
 
-    await fetch('/addTimestampComment', {
+    const res = await fetch('/addTimestampComment', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(comment)
     });
 
-    if(res.ok)
+    if(res.ok) 
     {
-        //probably do not want to reload since that would stop playback
         window.location.reload();
     }
-    else
+    else 
     {
-        alert("Something went wrong with your timestamp comment. Please try again.");
+        alert("Save failed.");
     }
 
     return false;
+}
+
+//send like/dislike to backend system
+async function sendReviewReaction(reviewId, reaction)
+{
+    try
+    {
+        const res = await fetch('/reviewReact', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                reviewId,
+                reaction
+            })
+        });
+
+        if(!res.ok)
+        {
+            throw new Error("Reaction failed");
+        }
+
+        window.location.reload();
+    }
+    catch(err)
+    {
+        console.error(err);
+    }
 }
 
 //spotify web playback sdk related code below
@@ -117,19 +151,36 @@ function setPlayerInstance(player)
     playerInstance = player;
 }
 
+document.getElementById("play-toggle")?.addEventListener("click", async () => {
+    if(!playerInstance)
+    {
+        return;
+    }
+
+    const icon = document.querySelector("#play-toggle i");
+
+    if(isPlaying)
+    {
+        await playerInstance.pause();
+        isPlaying = false;
+        if(icon)
+        {
+            icon.className = "bi bi-play-fill";
+        }
+    } 
+    else
+    {
+        await playerInstance.resume();
+        isPlaying = true;
+        if(icon)
+        {
+            icon.className = "bi bi-pause-fill";
+        }
+    }
+});
+
 //basically, when page is fully loaded...
 document.addEventListener("DOMContentLoaded", () => {
-
-    //connect the buttons so they do the things they are
-    //supposed to do (play button resuming playback, pause pausing, etc.)
-    document.getElementById("play-btn")?.addEventListener("click", () => {
-        playerInstance?.resume();
-    });
-
-    document.getElementById("pause-btn")?.addEventListener("click", () => {
-        playerInstance?.pause();
-    });
-
     //update the position of the seek bar
     document.getElementById("seek-bar")?.addEventListener("input", async (e) => {
         if(!playerInstance)
@@ -162,8 +213,51 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         playerTimestampPosition = state.position/1000;
-    })
+        const displayField = document.getElementById("timestamp_display");
+        if(displayField)
+        {
+            displayField.value = formatTime(playerTimestampPosition);
+        }
+    });
+
+    //make it to where clicking all timestamp comments move the player
+    //to the timestamp position
+    document.querySelectorAll('.timestamp-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const seconds = parseFloat(e.target.dataset.seconds);
+            if(playerInstance && !isNaN(seconds))
+            {
+                playerInstance.seek(seconds * 1000);
+            }
+        });
+    });
 });
+
+//basically bind all the like/dislike buttons so logic works
+const bindReactionButtons = () => {
+    const likeBtns = document.querySelectorAll(".like-btn");
+    const dislikeBtns = document.querySelectorAll(".dislike-btn");
+
+    if(likeBtns.length === 0 && dislikeBtns.length === 0)
+    {
+        return setTimeout(bindReactionButtons, 0);
+    }
+
+    likeBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            sendReviewReaction(btn.dataset.reviewId, 1);
+        });
+    });
+
+    dislikeBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            sendReviewReaction(btn.dataset.reviewId, -1);
+        });
+    });
+};
+
+bindReactionButtons();
 
 //basically a timer that will update the time display of the player every 500 ms
 //probably should optimize it later but oh well
@@ -186,6 +280,8 @@ setInterval(async () => {
 
     document.getElementById("seek-bar").value = percent;
 
+    document.getElementById("seek-bar").style.background = `linear-gradient(to right, #6f42c1 0%, #6f42c1 ${percent}%, #e9ecef ${percent}%, #e9ecef 100%)`;
+
     const seconds = Math.floor(position / 1000);
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -199,7 +295,7 @@ window.onSpotifyWebPlaybackSDKReady = () =>
 {
     if(document.getElementById("song-page"))
     {
-        console.log("SONG TAB PAGE!!!");
+        //console.log("SONG TAB PAGE!!!");
 
         const token = SPOTIFY_TOKEN;
 
@@ -220,7 +316,7 @@ window.onSpotifyWebPlaybackSDKReady = () =>
 
         player.addListener('ready', ({ device_id }) => 
         {
-            console.log('Ready with Device ID', device_id);
+            //console.log('Ready with Device ID', device_id);
             setupPlayback(device_id, token);
         });
 
@@ -258,6 +354,10 @@ function setupPlayback(device_id, token)
                 'Authorization': `Bearer ${token}`
                 },
             });
+
+            isPlaying = true;
+            const icon = document.querySelector("#play-toggle i");
+            icon.className = "bi bi-pause-fill";
         } catch(err)
         {
             console.log(err);
@@ -268,6 +368,33 @@ function setupPlayback(device_id, token)
     });
 }
 
+// Dark Mode Toggle
+function initDarkMode() {
+  const darkModeToggle = document.getElementById('darkModeToggle');
+
+  // Load dark mode preference from localStorage
+  const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
+  if (isDarkMode) {
+    document.documentElement.classList.add('dark-mode');
+  }
+
+  // Toggle dark mode on button click
+  if (darkModeToggle) {
+    darkModeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark-mode');
+      
+      // Update localStorage
+      if (document.documentElement.classList.contains('dark-mode')) {
+        localStorage.setItem('darkMode', 'enabled');
+      } else {
+        localStorage.setItem('darkMode', 'disabled');
+      }
+    });
+  }
+}
+
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', initDarkMode);
 // Handles profile menu clicking and toggling
 function toggleProfileMenu() {
     const menu = document.getElementById('profileMenu');

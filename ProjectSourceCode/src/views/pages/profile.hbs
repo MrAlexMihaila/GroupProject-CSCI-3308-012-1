@@ -39,14 +39,14 @@
                 <!-- Form to unfollow user -->
                 <form method="POST" action="/friends/unfollow" class="mt-auto">
                   <input type="hidden" name="unfollowedId" value="{{profileUser.user_id}}" />
-                  <button type="submit" class="btn btn-outline-primary mt-3 mb-0">Unfollow</button>
+                  <button type="submit" class="btn btn-purple mt-3 mb-0">Unfollow</button>
                 </form>
 
               {{else if isFollowing}}
                 <!-- Form to unfollow user -->
                 <form method="POST" action="/friends/unfollow" class="mt-auto">
                   <input type="hidden" name="unfollowedId" value="{{profileUser.user_id}}" />
-                  <button type="submit" class="btn btn-outline-primary mt-3 mb-0">Unfollow</button>
+                  <button type="submit" class="btn btn-purple mt-3 mb-0">Unfollow</button>
                 </form>
 
               {{else}}
@@ -54,7 +54,7 @@
                 <form method="POST" action="/friends/follow" class="mt-3">
                   <input type="hidden" name="userId" value="{{user.user_id}}">
                   <input type="hidden" name="followedId" value="{{profileUser.user_id}}">
-                  <button type="submit" class="btn btn-primary">Follow</button>
+                  <button type="submit" class="btn btn-purple">Follow</button>
                 </form>
               {{/if}}
 

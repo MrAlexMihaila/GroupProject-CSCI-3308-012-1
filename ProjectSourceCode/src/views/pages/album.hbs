@@ -15,11 +15,11 @@
             </p>
 
             {{#if login}}
-                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
+                <button class="btn btn-purple mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
                     Add Review
                 </button>
             {{else}}
-                <button class="btn btn-primary mt-3">
+                <button class="btn btn-purple mt-3">
                     Please login to add a review!
                 </button>
             {{/if}}
@@ -32,7 +32,7 @@
                     <ul class="list-group">
                         {{#each tracks}}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <a href="/songs_tab/{{this.id}}" class="text-decoration-none">
+                                <a href="/song/{{this.id}}" class="text-decoration-none">
                                     {{this.name}}
                                 </a>
                                 <span class="text-muted">
