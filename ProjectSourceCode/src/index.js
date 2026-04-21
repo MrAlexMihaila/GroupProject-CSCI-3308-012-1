@@ -340,24 +340,108 @@ app.get('/', (req, res) => {
 });
 
 //home get route, renders home page
-app.get('/home', (req, res) => {
-    // Dummy data for demonstration
-    const topSongs = [
-        { id: '1', name: 'Song 1', album: { name: 'Album 1', images: [{ url: 'https://via.placeholder.com/150' }] }, artists: [{ name: 'Artist 1' }] },
-        { id: '2', name: 'Song 2', album: { name: 'Album 2', images: [{ url: 'https://via.placeholder.com/150' }] }, artists: [{ name: 'Artist 2' }] },
-        // Add more as needed
-    ];
-    const topAlbums = [
-        { id: '1', name: 'Album 1', images: [{ url: 'https://via.placeholder.com/150' }], artists: [{ name: 'Artist 1' }], release_date: '2023-01-01' },
-        { id: '2', name: 'Album 2', images: [{ url: 'https://via.placeholder.com/150' }], artists: [{ name: 'Artist 2' }], release_date: '2023-01-01' },
-        // Add more
-    ];
-    const friendActivities = [
-        { type: 'comment', user: 'Friend1', content: 'Great song!' },
-        { type: 'like', user: 'Friend2', content: 'Awesome review!' },
-        // Add more
-    ];
-    res.render('pages/home', { topSongs, topAlbums, friendActivities });
+app.get('/home', async (req, res) => {
+    try {
+        // Get top songs based on number of reviews
+        const topSongsData = await db.any(
+            `SELECT s.song_id, COUNT(r.review_id) as review_count, AVG(r.rating) as avg_rating
+             FROM songs s
+             LEFT JOIN reviews r ON s.song_id = r.song_id
+             GROUP BY s.song_id
+             HAVING COUNT(r.review_id) > 0
+             ORDER BY review_count DESC, avg_rating DESC
+             LIMIT 8`
+        );
+
+        // Get top albums based on number of reviews
+        const topAlbumsData = await db.any(
+            `SELECT a.album_id, COUNT(r.review_id) as review_count, AVG(r.rating) as avg_rating
+             FROM albums a
+             LEFT JOIN reviews r ON a.album_id = r.album_id
+             GROUP BY a.album_id
+             HAVING COUNT(r.review_id) > 0
+             ORDER BY review_count DESC, avg_rating DESC
+             LIMIT 8`
+        );
+
+        // Fetch Spotify data for top songs
+        const token = await getSpotifyToken();
+        const topSongs = [];
+        for (const song of topSongsData) {
+            try {
+                const spotifyResponse = await axios({
+                    url: `https://api.spotify.com/v1/tracks/${song.song_id}`,
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                topSongs.push(spotifyResponse.data);
+            } catch (err) {
+                console.error(`Error fetching Spotify data for song ${song.song_id}:`, err.message);
+            }
+        }
+
+        // Fetch Spotify data for top albums
+        const topAlbums = [];
+        for (const album of topAlbumsData) {
+            try {
+                const spotifyResponse = await axios({
+                    url: `https://api.spotify.com/v1/albums/${album.album_id}`,
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                topAlbums.push(spotifyResponse.data);
+            } catch (err) {
+                console.error(`Error fetching Spotify data for album ${album.album_id}:`, err.message);
+            }
+        }
+
+        // Get friend feed activities
+        let friendActivities = [];
+        if (req.session.user) {
+            try {
+                // Get all friends of the current user
+                const friends = await db.any(
+                    `SELECT followed_user_id FROM follows WHERE following_user_id = $1`,
+                    [req.session.user.user_id]
+                );
+
+                if (friends.length > 0) {
+                    const friendIds = friends.map(f => f.followed_user_id);
+
+                    // Get recent comments by friends
+                    const recentComments = await db.any(
+                        `SELECT sc.comment_id, sc.user_id, sc.song_id, sc.comment_text, sc.created_at, 
+                                u.username, s.title as song_title
+                         FROM song_comments sc
+                         JOIN users u ON sc.user_id = u.user_id
+                         JOIN songs s ON sc.song_id = s.song_id
+                         WHERE sc.user_id = ANY($1)
+                         ORDER BY sc.created_at DESC
+                         LIMIT 10`,
+                        [friendIds]
+                    );
+
+                    // Transform comments to activity feed format
+                    friendActivities = recentComments.map(comment => ({
+                        type: 'comment',
+                        user: comment.username,
+                        content: comment.comment_text,
+                        songId: comment.song_id,
+                        songTitle: comment.song_title,
+                        timestamp: comment.created_at,
+                        userId: comment.user_id
+                    }));
+                }
+            } catch (err) {
+                console.error('Error fetching friend activities:', err.message);
+            }
+        }
+
+        res.render('pages/home', { topSongs, topAlbums, friendActivities });
+    } catch (err) {
+        console.error('Error rendering home page:', err.message);
+        res.render('pages/home', { topSongs: [], topAlbums: [], friendActivities: [] });
+    }
 });
 
 //logic get route

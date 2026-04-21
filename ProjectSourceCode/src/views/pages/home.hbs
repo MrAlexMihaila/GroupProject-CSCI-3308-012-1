@@ -6,36 +6,52 @@
 <div class="home-section">
   <h2>Top Songs of the Week</h2>
   <div class="row-scroll">
-    {{#each topSongs}}
-      <div class="col-2-4">
-        {{> song_card}}
-      </div>
-    {{/each}}
+    {{#if topSongs}}
+      {{#each topSongs}}
+        <div class="col-2-4">
+          {{> song_card id=id name=name album=album artists=artists}}
+        </div>
+      {{/each}}
+    {{else}}
+      <p>No songs to display yet. Be the first to review a song!</p>
+    {{/if}}
   </div>
 </div>
 
 <div class="home-section">
   <h2>Top Albums of the Week</h2>
   <div class="row-scroll">
-    {{#each topAlbums}}
-      <div class="col-2-4">
-        {{> album_card}}
-      </div>
-    {{/each}}
+    {{#if topAlbums}}
+      {{#each topAlbums}}
+        <div class="col-2-4">
+          {{> album_card id=id name=name images=images artists=artists release_date=release_date}}
+        </div>
+      {{/each}}
+    {{else}}
+      <p>No albums to display yet. Be the first to review an album!</p>
+    {{/if}}
   </div>
 </div>
 
+{{#if user}}
 <div class="home-section">
   <h2>Friend Feed</h2>
   <div class="friend-feed">
-    {{#each friendActivities}}
-      <div class="feed-item">
-        {{#if (eq type 'comment')}}
-          <p><strong>{{user}}</strong> commented: "{{content}}"</p>
-        {{else if (eq type 'like')}}
-          <p><strong>{{user}}</strong> liked your comment: "{{content}}"</p>
-        {{/if}}
-      </div>
-    {{/each}}
+    {{#if friendActivities}}
+      {{#each friendActivities}}
+        <div class="feed-item" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; background-color: #f9f9f9;">
+          {{#if (eq type 'comment')}}
+            <p style="margin: 0 0 10px 0;">
+              <strong>{{user}}</strong> commented on 
+              <a href="/song/{{songId}}" style="color: #1DB954; text-decoration: none; font-weight: bold;">{{songTitle}}</a>:
+            </p>
+            <p style="margin: 0; color: #666; font-style: italic;">"{{content}}"</p>
+          {{/if}}
+        </div>
+      {{/each}}
+    {{else}}
+      <p>No friend activity yet. Follow some users to see their activity!</p>
+    {{/if}}
   </div>
 </div>
+{{/if}}
