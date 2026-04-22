@@ -424,7 +424,7 @@ app.get('/home', async (req, res) => {
                          JOIN albums a ON r.album_id = a.album_id
                          WHERE r.user_id = ANY($1) AND r.album_id IS NOT NULL
                          ORDER BY created_at DESC
-                         LIMIT 10`,
+                         LIMIT 5`,
                         [friendIds]
                     );
 
