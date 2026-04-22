@@ -6,6 +6,14 @@
                 <img src="{{albumImages.[0].url}}" class="img-fluid mb-3" alt="Album Art" />
             {{/if}}
 
+            <h4>{{name}}</h4>
+
+            <p class="text-muted">
+                {{#each artists}}
+                {{this.name}}{{#unless @last}}, {{/unless}}
+                {{/each}}
+            </p>
+
             <p>
                 <strong>Community Rating:</strong>
                 {{#if albumRating}}
@@ -15,13 +23,22 @@
                 {{/if}}
             </p>
 
-            <h4>{{name}}</h4>
-
-            <p class="text-muted">
-                {{#each artists}}
-                {{this.name}}{{#unless @last}}, {{/unless}}
-                {{/each}}
-            </p>
+            {{#if login}}
+                {{#if userReview}}
+                    <button class="btn btn-outline-purple w-100 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#add_review_modal">
+                        Edit Review
+                    </button>
+                {{else}}
+                    <button class="btn btn-outline-purple w-100 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#add_review_modal">
+                        Add Review
+                    </button>
+                {{/if}}
+                
+            {{else}}
+                <button class="btn btn-outline-purple w-100 rounded-pill fw-bold" data-bs-toggle="modal">
+                    Please login to add a review!
+                </button>
+            {{/if}}
         </div>
         <div class="col-md-7 p-4">
             <div class="row">
@@ -30,7 +47,7 @@
                     <h5>Community Rating:</h5>
                     {{#if reviews.length}}
                         {{#each reviews}}
-                            <div class="border p-2 mb-2">
+                            <div class="border p-2 mb-2 song-card">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <strong>{{username}}</strong>
@@ -50,18 +67,6 @@
                         {{/each}}
                     {{else}}
                         <p>No ratings yet</p>
-                    {{/if}}
-
-                    {{#if login}}
-                        {{#if userReview}}
-                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
-                                Edit Review
-                            </button>
-                        {{else}}
-                            <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#add_review_modal">
-                                Add Review
-                            </button>
-                        {{/if}}
                     {{/if}}
                 </div>
                 <!-- Tracks -->

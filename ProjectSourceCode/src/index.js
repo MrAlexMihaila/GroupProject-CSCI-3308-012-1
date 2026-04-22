@@ -1510,7 +1510,7 @@ app.post('/addAlbumReview', auth, async (req, res) => {
          updated_at = CURRENT_TIMESTAMP;`,
       [userId, albumID, rating, description]
     );
-    console.log([userId, albumID, rating, description]);
+    //console.log([userId, albumID, rating, description]);
 
     return res.status(200).json({ success: true });
 
