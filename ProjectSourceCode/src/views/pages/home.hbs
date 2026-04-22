@@ -4,7 +4,7 @@
 </div>
 
 <div class="home-section">
-  <h2>Top Songs of the Week</h2>
+  <h2 style="margin-left: 10px;">Top Songs of the Week</h2>
   <div class="row-scroll">
     {{#if topSongs}}
       {{#each topSongs}}
@@ -19,7 +19,7 @@
 </div>
 
 <div class="home-section">
-  <h2>Top Albums of the Week</h2>
+  <h2 style="margin-left: 10px;">Top Albums of the Week</h2>
   <div class="row-scroll">
     {{#if topAlbums}}
       {{#each topAlbums}}
@@ -35,17 +35,24 @@
 
 {{#if user}}
 <div class="home-section">
-  <h2>Friend Feed</h2>
+  <h2 style="margin-left: 10px;">Friend Feed</h2>
   <div class="friend-feed">
     {{#if friendActivities}}
       {{#each friendActivities}}
-        <div class="feed-item" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; background-color: #f9f9f9;">
+        <div class="feed-item" style="padding: 15px; margin-bottom: 10px; border-radius: 8px;">
           {{#if (eq type 'comment')}}
             <p style="margin: 0 0 10px 0;">
               <strong>{{user}}</strong> commented on 
               <a href="/song/{{songId}}" style="color: #1DB954; text-decoration: none; font-weight: bold;">{{songTitle}}</a>:
             </p>
-            <p style="margin: 0; color: #666; font-style: italic;">"{{content}}"</p>
+            <p style="margin: 0;">{{content}}</p>
+          {{/if}}
+          {{#if (eq type 'review')}}
+            <p style="margin: 0 0 10px 0;">
+              <strong>{{user}}</strong> reviewed 
+              <a href="/album/{{albumId}}" style="color: #1DB954; text-decoration: none; font-weight: bold;">{{albumTitle}}</a>:
+            </p>
+            <p style="margin: 0;">{{content}}</p>
           {{/if}}
         </div>
       {{/each}}

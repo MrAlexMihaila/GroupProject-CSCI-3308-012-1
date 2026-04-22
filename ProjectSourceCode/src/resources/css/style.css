@@ -84,9 +84,26 @@ html.dark-mode .genre-page-body h3 {
 }
 
 html.dark-mode .genre-header-card,
+html.dark-mode .genre-header-bar {
+    background-color: #1a1a1a !important;
+    border-bottom: 1px solid #444 !important;
+}
+
+html.dark-mode .genre-header-bar h2 {
+    color: #ffffff !important;
+}
 html.dark-mode .genre-header-wrapper {
     background-color: #1a1a1a !important;
     border-bottom: 1px solid #444 !important;
+}
+
+html.dark-mode .genre-header-bar {
+    background-color: #1a1a1a !important;
+    border-bottom: 1px solid #444 !important;
+}
+
+html.dark-mode .genre-header-bar h2 {
+    color: #ffffff !important;
 }
 
 html.dark-mode .genre-search-form .form-control {
@@ -330,13 +347,28 @@ body {
   margin-left: 10px;
 }
 
+html.dark-mode .friend-feed {
+  border-color: #444;
+  background: #444;
+  background-color: #2d2d2d;
+}
+
 .feed-item {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #e9ecef;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background-color: #fff;
 }
 
 .feed-item:last-child {
   border-bottom: none;
+  margin-bottom: 0;
+}
+
+html.dark-mode .feed-item {
+  border-color: #444;
+  background-color: #2d2d2d;
 }
 
 .feed-item p {
@@ -555,6 +587,21 @@ html.dark-mode #seek-bar::-moz-range-thumb {
   width: 16px;
   border-radius: 50%;
   cursor: pointer;
+}
+
+/* Friend feed dark mode */
+.feed-item {
+  background-color: #f9f9f9;
+}
+
+html.dark-mode .feed-item {
+  background-color: #2d2d2d !important;
+  border-color: #444 !important;
+  color: #e0e0e0 !important;
+}
+
+html.dark-mode .feed-item a {
+  color: #1DB954 !important;
 }
 
 /* Review and comment borders in dark mode */
