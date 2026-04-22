@@ -1,5 +1,64 @@
-<div class="container mt-4">
-    <p>
-        Dummy text. To be replaced.
-    </p>
+<div class="home-header">
+  <h1>Welcome to ATrack</h1>
+  <p>Discover the top songs and albums of the week, and stay connected with your friends.</p>
 </div>
+
+<div class="home-section">
+  <h2 style="margin-left: 10px;">Top Songs of the Week</h2>
+  <div class="row-scroll">
+    {{#if topSongs}}
+      {{#each topSongs}}
+        <div class="col-2-4">
+          {{> song_card id=id name=name album=album artists=artists}}
+        </div>
+      {{/each}}
+    {{else}}
+      <p>No songs to display yet. Be the first to review a song!</p>
+    {{/if}}
+  </div>
+</div>
+
+<div class="home-section">
+  <h2 style="margin-left: 10px;">Top Albums of the Week</h2>
+  <div class="row-scroll">
+    {{#if topAlbums}}
+      {{#each topAlbums}}
+        <div class="col-2-4">
+          {{> album_card id=id name=name images=images artists=artists release_date=release_date}}
+        </div>
+      {{/each}}
+    {{else}}
+      <p>No albums to display yet. Be the first to review an album!</p>
+    {{/if}}
+  </div>
+</div>
+
+{{#if user}}
+<div class="home-section">
+  <h2 style="margin-left: 10px;">Friend Feed</h2>
+  <div class="friend-feed">
+    {{#if friendActivities}}
+      {{#each friendActivities}}
+        <div class="feed-item" style="padding: 15px; margin-bottom: 10px; border-radius: 8px;">
+          {{#if (eq type 'comment')}}
+            <p style="margin: 0 0 10px 0;">
+              <strong>{{user}}</strong> gave 
+              <a href="/song/{{songId}}" style="color: #1DB954; text-decoration: none; font-weight: bold;">{{songTitle}}</a> (Song) a {{ratingLetter}} rating on {{formattedTimestamp}}:
+            </p>
+            <p style="margin: 0;">{{content}}</p>
+          {{/if}}
+          {{#if (eq type 'review')}}
+            <p style="margin: 0 0 10px 0;">
+              <strong>{{user}}</strong> gave 
+              <a href="/albums_tab/{{albumId}}" style="color: #1DB954; text-decoration: none; font-weight: bold;">{{albumTitle}}</a> (Album) a {{ratingLetter}} rating on {{formattedTimestamp}}:
+            </p>
+            <p style="margin: 0;">{{content}}</p>
+          {{/if}}
+        </div>
+      {{/each}}
+    {{else}}
+      <p>No friend activity yet. Follow some users to see their activity!</p>
+    {{/if}}
+  </div>
+</div>
+{{/if}}
