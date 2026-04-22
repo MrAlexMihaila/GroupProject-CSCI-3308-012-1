@@ -42,15 +42,15 @@
         <div class="feed-item" style="padding: 15px; margin-bottom: 10px; border-radius: 8px;">
           {{#if (eq type 'comment')}}
             <p style="margin: 0 0 10px 0;">
-              <strong>{{user}}</strong> commented on 
-              <a href="/song/{{songId}}" style="color: #1DB954; text-decoration: none; font-weight: bold;">{{songTitle}}</a>:
+              <strong>{{user}}</strong> gave 
+              <a href="/song/{{songId}}" style="color: #1DB954; text-decoration: none; font-weight: bold;">{{songTitle}}</a> (Song) a {{ratingLetter}} rating on {{formattedTimestamp}}:
             </p>
             <p style="margin: 0;">{{content}}</p>
           {{/if}}
           {{#if (eq type 'review')}}
             <p style="margin: 0 0 10px 0;">
-              <strong>{{user}}</strong> reviewed 
-              <a href="/album/{{albumId}}" style="color: #1DB954; text-decoration: none; font-weight: bold;">{{albumTitle}}</a>:
+              <strong>{{user}}</strong> gave 
+              <a href="/albums_tab/{{albumId}}" style="color: #1DB954; text-decoration: none; font-weight: bold;">{{albumTitle}}</a> (Album) a {{ratingLetter}} rating on {{formattedTimestamp}}:
             </p>
             <p style="margin: 0;">{{content}}</p>
           {{/if}}

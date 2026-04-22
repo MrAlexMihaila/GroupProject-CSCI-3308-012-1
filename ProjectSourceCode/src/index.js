@@ -410,14 +410,14 @@ app.get('/home', async (req, res) => {
 
                     // Get recent comments and reviews by friends
                     const recentComments = await db.any(
-                        `SELECT r.review_id as comment_id, r.user_id, r.song_id, r.review_text as comment_text, r.created_at,
+                        `SELECT r.review_id as comment_id, r.user_id, r.song_id, r.review_text as comment_text, r.rating, r.created_at,
                                 u.username, s.title as song_title, NULL as album_title, 'song_review' as activity_type
                          FROM reviews r
                          JOIN users u ON r.user_id = u.user_id
                          JOIN songs s ON r.song_id = s.song_id
                          WHERE r.user_id = ANY($1) AND r.song_id IS NOT NULL
                          UNION ALL
-                         SELECT r.review_id as comment_id, r.user_id, NULL as song_id, r.review_text as comment_text, r.created_at,
+                         SELECT r.review_id as comment_id, r.user_id, NULL as song_id, r.review_text as comment_text, r.rating, r.created_at,
                                 u.username, NULL as song_title, a.title as album_title, 'album_review' as activity_type
                          FROM reviews r
                          JOIN users u ON r.user_id = u.user_id
@@ -429,17 +429,23 @@ app.get('/home', async (req, res) => {
                     );
 
                     // Transform comments and reviews to activity feed format
-                    friendActivities = recentComments.map(activity => ({
-                        type: activity.activity_type === 'song_review' ? 'comment' : 'review',
-                        user: activity.username,
-                        content: activity.comment_text,
-                        songId: activity.song_id,
-                        songTitle: activity.song_title,
-                        albumId: activity.album_id,
-                        albumTitle: activity.album_title,
-                        timestamp: activity.created_at,
-                        userId: activity.user_id
-                    }));
+                    friendActivities = recentComments.map(activity => {
+                        const date = new Date(activity.created_at);
+                        return {
+                            type: activity.activity_type === 'song_review' ? 'comment' : 'review',
+                            user: activity.username,
+                            content: activity.comment_text,
+                            songId: activity.song_id,
+                            songTitle: activity.song_title,
+                            albumId: activity.album_id,
+                            albumTitle: activity.album_title,
+                            timestamp: activity.created_at,
+                            formattedTimestamp: date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                            rating: activity.rating,
+                            ratingLetter: convertRatingToLetter(activity.rating),
+                            userId: activity.user_id
+                        };
+                    });
                 }
             } catch (err) {
                 console.error('Error fetching friend activities:', err.message);
