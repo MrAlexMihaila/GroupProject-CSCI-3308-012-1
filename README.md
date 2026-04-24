@@ -24,6 +24,9 @@ POSTGRES_DB=database here
 SESSION_SECRET=secret here
 SPOTIFY_CLIENT_ID=client id from Spotify API
 SPOTIFY_CLIENT_SECRET=client secret from Spotify API
+CLOUDINARY_CLOUD_NAME = name from Cloudinary API
+CLOUDINARY_API_KEY = key from Cloundinary API
+CLOUDINARY_API_SECRET = secret from Cloudinary API
 ```
 
 Then, run `docker compose up` to start the local server. Afterwards, navigate to [http://127.0.0.1:3000/home](http://127.0.0.1:3000/home) or [http://localhost:3000/home](http://localhost:3000/home) in order to view the website locally. Run `docker compose down` to close the local server.
